@@ -1,5 +1,10 @@
+import { ActionGrid } from '@/components/ui/action-grid';
+import { EmptyState } from '@/components/ui/empty-state';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { SectionHeader } from '@/components/ui/section-header';
+import { TransactionItem } from '@/components/ui/transaction-item';
 import { db } from '@/config/firebase';
+import { BrandColors, Colors, Gradients, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -15,6 +20,7 @@ import {
   Dimensions,
   LayoutAnimation,
   Platform,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -23,8 +29,13 @@ import {
   UIManager,
   View
 } from 'react-native';
+import Animated, {
+  FadeInDown,
+  FadeInUp
+} from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 // Activar LayoutAnimation para Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -35,6 +46,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const colors = Colors[isDark ? 'dark' : 'light'];
   const { user } = useAuth();
   const { canalesActivos } = useCanales();
   const [cajaActual, setCajaActual] = useState<Caja | null>(null);
@@ -78,7 +90,7 @@ export default function HomeScreen() {
               }
             });
           }
-          trans.sort((a, b) => b.fecha - a.fecha); // Ordenar por fecha descendente
+          trans.sort((a, b) => b.fecha - a.fecha);
           setTransacciones(trans);
           setLoading(false);
         });
@@ -96,7 +108,7 @@ export default function HomeScreen() {
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    // Simular recarga ya que Firebase es tiempo real
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
@@ -179,7 +191,6 @@ export default function HomeScreen() {
                 const cajaData = cajaSnapshot.val();
                 const updates: any = {};
 
-                // Revertir contadores
                 if (transaccion.tipo === 'ingreso') {
                   if (transaccion.categoria === 'deposito') {
                     updates.totalDepositos = (cajaData.totalDepositos || 0) - transaccion.monto;
@@ -198,14 +209,15 @@ export default function HomeScreen() {
 
                 updates.totalComisiones = (cajaData.totalComisiones || 0) - (transaccion.comision || 0);
 
-                // Actualizar caja y marcar transacción como anulada
                 await update(cajaRef, updates);
                 await update(ref(db, `transacciones/${transaccion.id}`), { anulada: true });
 
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 Alert.alert('Éxito', 'Transacción reversada correctamente');
               }
             } catch (error) {
               console.error(error);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               Alert.alert('Error', 'No se pudo reversar la transacción');
             } finally {
               setLoading(false);
@@ -216,10 +228,18 @@ export default function HomeScreen() {
     );
   };
 
+  // Quick Actions
+  const quickActions = [
+    { id: 'deposito', label: 'Depósito', icon: 'arrow.down' as const, color: '#34C759', onPress: () => router.push('/nueva-operacion?tipo=deposito') },
+    { id: 'retiro', label: 'Retiro', icon: 'arrow.up' as const, color: '#FF3B30', onPress: () => router.push('/nueva-operacion?tipo=retiro') },
+    { id: 'servicios', label: 'Servicios', icon: 'doc.text.fill' as const, color: '#007AFF', onPress: () => router.push('/nueva-operacion?tipo=pago_servicios') },
+    { id: 'recargas', label: 'Recargas', icon: 'bolt.fill' as const, color: '#5856D6', onPress: () => router.push('/nueva-operacion?tipo=recarga') },
+  ];
+
   if (loading) {
     return (
-      <View style={[styles.container, styles.centered, isDark && styles.containerDark]}>
-        <ActivityIndicator size="large" color="#FF6B00" />
+      <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={BrandColors.primary} />
       </View>
     );
   }
@@ -227,293 +247,258 @@ export default function HomeScreen() {
   // SIN CAJA ABIERTA
   if (!cajaActual) {
     return (
-      <View style={[styles.container, isDark && styles.containerDark]}>
-        <View style={[styles.headerSimple, isDark && styles.headerSimpleDark]}>
-          <Text style={[styles.headerTitle, isDark && styles.textDark]}>Mi Negocio</Text>
-          <Text style={[styles.headerSubtitle, isDark && styles.textDarkSecondary]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Animated.View
+          entering={FadeInDown.duration(500)}
+          style={[styles.headerSimple, { backgroundColor: colors.surface }]}
+        >
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Mi Negocio</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
             Hola, {user?.displayName?.split(' ')[0] || 'Corresponsal'} 👋
           </Text>
-        </View>
-        <View style={styles.emptyStateContainer}>
-          <View style={[styles.emptyIcon, isDark && styles.emptyIconDark]}>
-            <IconSymbol size={40} name="lock.fill" color="#FF6B00" />
-          </View>
-          <Text style={[styles.emptyTitle, isDark && styles.textDark]}>Caja Cerrada</Text>
-          <Text style={[styles.emptySubtitle, isDark && styles.textDarkSecondary]}>
-            Abre tu caja para comenzar a registrar operaciones del día.
-          </Text>
-          <TouchableOpacity
-            style={styles.openCajaButton}
-            onPress={() => router.push('/abrir-caja')}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={['#FF6B00', '#FF8533']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.openCajaGradient}
-            >
-              <Text style={styles.openCajaText}>Abrir Caja Ahora</Text>
-              <IconSymbol size={20} name="arrow.right" color="#fff" />
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+        </Animated.View>
+
+        <EmptyState
+          icon="lock.fill"
+          iconColor={BrandColors.primary}
+          title="Caja Cerrada"
+          description="Abre tu caja para comenzar a registrar operaciones del día."
+          action={{
+            label: 'Abrir Caja Ahora',
+            onPress: () => router.push('/abrir-caja'),
+            icon: 'arrow.right',
+          }}
+          style={{ marginTop: -80 }}
+        />
       </View>
     );
   }
 
   // CON CAJA ABIERTA
   return (
-    <View style={[styles.container, isDark && styles.containerDark]}>
-      {/* Header fijo minimalista */}
-      <View style={[styles.topBar, isDark && styles.topBarDark]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <Animated.View
+        entering={FadeInDown.duration(400)}
+        style={[styles.topBar, { backgroundColor: colors.background }]}
+      >
         <View>
-          <Text style={[styles.topBarTitle, isDark && styles.textDark]}>Mi Caja</Text>
-          <Text style={[styles.topBarDate, isDark && styles.textDarkSecondary]}>
+          <Text style={[styles.topBarTitle, { color: colors.text }]}>Mi Caja</Text>
+          <Text style={[styles.topBarDate, { color: colors.textSecondary }]}>
             {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
           </Text>
         </View>
         <TouchableOpacity
           onPress={() => router.push('/cerrar-caja')}
-          style={[styles.closeButton, isDark && styles.closeButtonDark]}
+          style={[styles.closeButton, { backgroundColor: colors.surface }]}
+          activeOpacity={0.7}
         >
-          <IconSymbol size={16} name="lock.fill" color={isDark ? '#FF6B00' : '#FF6B00'} />
+          <IconSymbol size={16} name="lock.fill" color={BrandColors.primary} />
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       <ScrollView
         style={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContentContainer}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B00" />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={BrandColors.primary}
+            colors={[BrandColors.primary]}
+          />
+        }
       >
-        {/* Tarjeta Principal de Balance */}
-        <LinearGradient
-          colors={['#FF6B00', '#FF8E00']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.balanceCard}
-        >
-          <View style={styles.balanceCardTop}>
-            <View>
-              <Text style={styles.balanceLabel}>Saldo Disponible</Text>
-              <Text style={styles.balanceAmount}>
-                ${saldoActual.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-              </Text>
+        {/* Balance Card - Hero */}
+        <Animated.View entering={FadeInUp.delay(100).springify()}>
+          <LinearGradient
+            colors={Gradients.primary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.balanceCard, Shadows.primary]}
+          >
+            <View style={styles.balanceCardTop}>
+              <View>
+                <Text style={styles.balanceLabel}>Saldo Disponible</Text>
+                <Text style={styles.balanceAmount}>
+                  ${saldoActual.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                </Text>
+              </View>
+              <View style={styles.balanceIconBg}>
+                <IconSymbol size={24} name="dollarsign.circle.fill" color="#fff" />
+              </View>
             </View>
-            <View style={styles.balanceIconBg}>
-              <IconSymbol size={24} name="dollarsign.circle.fill" color="#fff" />
-            </View>
-          </View>
 
-          <View style={styles.balanceStatsRow}>
-            <View style={styles.balanceStatItem}>
-              <Text style={styles.balanceStatLabel}>Inicio</Text>
-              <Text style={styles.balanceStatValue}>${cajaActual.montoInicial.toFixed(0)}</Text>
+            <View style={styles.balanceStatsRow}>
+              <View style={styles.balanceStatItem}>
+                <Text style={styles.balanceStatLabel}>Inicio</Text>
+                <Text style={styles.balanceStatValue}>${cajaActual.montoInicial.toFixed(0)}</Text>
+              </View>
+              <View style={styles.balanceStatDivider} />
+              <View style={styles.balanceStatItem}>
+                <Text style={styles.balanceStatLabel}>Ops</Text>
+                <Text style={styles.balanceStatValue}>{cantidadOperaciones}</Text>
+              </View>
+              <View style={styles.balanceStatDivider} />
+              <View style={styles.balanceStatItem}>
+                <Text style={styles.balanceStatLabel}>Ganancia</Text>
+                <Text style={styles.balanceStatValue}>${totalComisiones.toFixed(2)}</Text>
+              </View>
             </View>
-            <View style={styles.balanceStatDivider} />
-            <View style={styles.balanceStatItem}>
-              <Text style={styles.balanceStatLabel}>Ops</Text>
-              <Text style={styles.balanceStatValue}>{cantidadOperaciones}</Text>
-            </View>
-            <View style={styles.balanceStatDivider} />
-            <View style={styles.balanceStatItem}>
-              <Text style={styles.balanceStatLabel}>Coms</Text>
-              <Text style={styles.balanceStatValue}>${totalComisiones.toFixed(2)}</Text>
-            </View>
-          </View>
 
-          {/* Saldos por Canal (Integrado) */}
-          {saldosPorCanal.length > 0 && (
-            <View style={{ marginTop: 24, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)', paddingTop: 16 }}>
-              <TouchableOpacity
-                style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
-                onPress={toggleSaldos}
-                activeOpacity={0.7}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <IconSymbol size={18} name="building.columns.fill" color="#fff" />
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#fff' }}>Saldos en Bancos</Text>
-                </View>
-                <IconSymbol size={16} name={mostrarSaldosCanales ? "chevron.up" : "chevron.down"} color="rgba(255,255,255,0.8)" />
-              </TouchableOpacity>
+            {/* Saldos por Canal */}
+            {saldosPorCanal.length > 0 && (
+              <View style={styles.canalesSection}>
+                <TouchableOpacity
+                  style={styles.canalesToggle}
+                  onPress={toggleSaldos}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.canalesToggleLeft}>
+                    <IconSymbol size={18} name="building.columns.fill" color="#fff" />
+                    <Text style={styles.canalesToggleText}>Saldos en Bancos</Text>
+                  </View>
+                  <IconSymbol
+                    size={16}
+                    name={mostrarSaldosCanales ? "chevron.up" : "chevron.down"}
+                    color="rgba(255,255,255,0.8)"
+                  />
+                </TouchableOpacity>
 
-              {mostrarSaldosCanales && (
-                <View style={{ marginTop: 16 }}>
-                  {saldosPorCanal.map((saldo, index) => (
-                    <View key={saldo.canalId} style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      paddingVertical: 12,
-                      borderTopWidth: index > 0 ? 1 : 0,
-                      borderTopColor: 'rgba(255,255,255,0.1)'
-                    }}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff', marginBottom: 2 }}>{saldo.canalNombre}</Text>
-                        <View style={{ flexDirection: 'row', gap: 8 }}>
-                          {saldo.entradas > 0 && <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)', fontWeight: '500' }}>↑ ${saldo.entradas}</Text>}
-                          {saldo.salidas > 0 && <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)', fontWeight: '500' }}>↓ ${saldo.salidas}</Text>}
+                {mostrarSaldosCanales && (
+                  <View style={styles.canalesList}>
+                    {saldosPorCanal.map((saldo, index) => (
+                      <View
+                        key={saldo.canalId}
+                        style={[
+                          styles.canalItem,
+                          index > 0 && styles.canalItemBorder
+                        ]}
+                      >
+                        <View style={styles.canalInfo}>
+                          <Text style={styles.canalName}>{saldo.canalNombre}</Text>
+                          <View style={styles.canalMovimientos}>
+                            {saldo.entradas > 0 && (
+                              <Text style={styles.canalMovimiento}>↑ ${saldo.entradas}</Text>
+                            )}
+                            {saldo.salidas > 0 && (
+                              <Text style={styles.canalMovimiento}>↓ ${saldo.salidas}</Text>
+                            )}
+                          </View>
                         </View>
+                        <Text style={styles.canalSaldo}>
+                          ${saldo.saldoActual.toFixed(2)}
+                        </Text>
                       </View>
-                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>
-                        ${saldo.saldoActual.toFixed(2)}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
-          )}
-        </LinearGradient>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+          </LinearGradient>
+        </Animated.View>
 
-        {/* Resumen Entradas / Salidas */}
-        <View style={styles.summaryRow}>
-          <View style={[styles.summaryItem, isDark && styles.cardDark]}>
-            <View style={[styles.summaryIcon, { backgroundColor: 'rgba(52, 199, 89, 0.1)' }]}>
+        {/* Summary Cards Row */}
+        <Animated.View
+          entering={FadeInUp.delay(200).springify()}
+          style={styles.summaryRow}
+        >
+          <View style={[styles.summaryItem, { backgroundColor: colors.surface }, Shadows.xs]}>
+            <View style={[styles.summaryIcon, { backgroundColor: 'rgba(52, 199, 89, 0.12)' }]}>
               <IconSymbol size={16} name="arrow.down.left" color="#34C759" />
             </View>
             <View>
-              <Text style={[styles.summaryLabel, isDark && styles.textDarkSecondary]}>Ingresos</Text>
+              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Ingresos</Text>
               <Text style={[styles.summaryValue, { color: '#34C759' }]}>
                 +${totalDepositos.toLocaleString('es-MX', { minimumFractionDigits: 0 })}
               </Text>
             </View>
           </View>
-          <View style={{ width: 12 }} />
-          <View style={[styles.summaryItem, isDark && styles.cardDark]}>
-            <View style={[styles.summaryIcon, { backgroundColor: 'rgba(255, 59, 48, 0.1)' }]}>
+
+          <View style={[styles.summaryItem, { backgroundColor: colors.surface }, Shadows.xs]}>
+            <View style={[styles.summaryIcon, { backgroundColor: 'rgba(255, 59, 48, 0.12)' }]}>
               <IconSymbol size={16} name="arrow.up.right" color="#FF3B30" />
             </View>
             <View>
-              <Text style={[styles.summaryLabel, isDark && styles.textDarkSecondary]}>Egresos</Text>
+              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Egresos</Text>
               <Text style={[styles.summaryValue, { color: '#FF3B30' }]}>
                 -${totalRetiros.toLocaleString('es-MX', { minimumFractionDigits: 0 })}
               </Text>
             </View>
           </View>
-        </View>
+        </Animated.View>
 
-        {/* Acciones Rápidas (Grid Unificado) */}
-        <Text style={[styles.sectionTitle, isDark && styles.textDark]}>Acciones Rápidas</Text>
-        <View style={styles.actionsGrid}>
-          <TouchableOpacity
-            style={[styles.actionBtn, isDark && styles.cardDark]}
-            onPress={() => router.push('/nueva-operacion?tipo=deposito')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#34C759' }]}>
-              <IconSymbol size={22} name="arrow.down" color="#fff" />
-            </View>
-            <Text style={[styles.actionLabel, isDark && styles.textDark]}>Depósito</Text>
-          </TouchableOpacity>
+        {/* Quick Actions */}
+        <Animated.View entering={FadeInUp.delay(300).springify()}>
+          <SectionHeader title="Acciones Rápidas" />
+          <ActionGrid actions={quickActions} columns={4} />
 
           <TouchableOpacity
-            style={[styles.actionBtn, isDark && styles.cardDark]}
-            onPress={() => router.push('/nueva-operacion?tipo=retiro')}
+            style={[styles.moreActionsBtn, { backgroundColor: colors.surface }]}
+            onPress={() => router.push('/nueva-operacion')}
             activeOpacity={0.7}
           >
-            <View style={[styles.actionIcon, { backgroundColor: '#FF3B30' }]}>
-              <IconSymbol size={22} name="arrow.up" color="#fff" />
-            </View>
-            <Text style={[styles.actionLabel, isDark && styles.textDark]}>Retiro</Text>
+            <Text style={[styles.moreActionsText, { color: colors.textSecondary }]}>
+              Ver todas las operaciones
+            </Text>
+            <IconSymbol size={16} name="chevron.right" color={colors.textTertiary} />
           </TouchableOpacity>
+        </Animated.View>
 
-          <TouchableOpacity
-            style={[styles.actionBtn, isDark && styles.cardDark]}
-            onPress={() => router.push('/nueva-operacion?tipo=pago_servicios')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#007AFF' }]}>
-              <IconSymbol size={22} name="doc.text.fill" color="#fff" />
-            </View>
-            <Text style={[styles.actionLabel, isDark && styles.textDark]}>Servicios</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionBtn, isDark && styles.cardDark]}
-            onPress={() => router.push('/nueva-operacion?tipo=recarga')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#5856D6' }]}>
-              <IconSymbol size={22} name="bolt.fill" color="#fff" />
-            </View>
-            <Text style={[styles.actionLabel, isDark && styles.textDark]}>Recargas</Text>
-          </TouchableOpacity>
-        </View>
-        {/* Botón extra para más acciones */}
-        <TouchableOpacity
-          style={[styles.moreActionsBtn, isDark && styles.cardDark]}
-          onPress={() => router.push('/nueva-operacion')}
-          activeOpacity={0.7}
+        {/* Recent Transactions */}
+        <Animated.View
+          entering={FadeInUp.delay(400).springify()}
+          style={{ marginTop: Spacing.lg }}
         >
-          <Text style={[styles.moreActionsText, { color: isDark ? '#fff' : '#555' }]}>Ver todas las operaciones</Text>
-          <IconSymbol size={16} name="chevron.right" color={isDark ? '#666' : '#bbb'} />
-        </TouchableOpacity>
+          <SectionHeader
+            title="Recientes"
+            action={transacciones.length > 5 ? {
+              label: 'Ver todo',
+              onPress: () => router.push('/(tabs)/historial'),
+            } : undefined}
+          />
 
-
-
-        {/* Últimas Transacciones */}
-        <Text style={[styles.sectionTitle, isDark && styles.textDark, { marginTop: 24 }]}>Recientes</Text>
-        {transacciones.length === 0 ? (
-          <View style={[styles.emptyList, isDark && styles.cardDark]}>
-            <Text style={[styles.emptyListText, isDark && styles.textDarkSecondary]}>Aún no hay movimientos hoy</Text>
-          </View>
-        ) : (
-          <View style={[styles.transactionsList, isDark && styles.cardDark]}>
-            {transacciones.slice(0, 10).map((trans, index) => {
-              const categoria = getCategoriaById(trans.categoria);
-              return (
-                <TouchableOpacity
-                  key={trans.id}
-                  style={[
-                    styles.transItem,
-                    index > 0 && styles.transBorder,
-                    isDark && styles.transBorderDark,
-                    trans.anulada && { opacity: 0.5 }
-                  ]}
-                  onLongPress={() => !trans.anulada && handleReversarTransaccion(trans)}
-                  activeOpacity={trans.anulada ? 1 : 0.7}
-                >
-                  <View style={[styles.transIcon, { backgroundColor: trans.anulada ? (isDark ? '#333' : '#eee') : `${categoria?.color}20` }]}>
-                    <IconSymbol
-                      size={18}
-                      name={trans.anulada ? 'xmark.circle.fill' : (categoria?.icono || 'circle')}
-                      color={trans.anulada ? (isDark ? '#555' : '#999') : (categoria?.color || '#888')}
+          {transacciones.length === 0 ? (
+            <View style={[styles.emptyList, { backgroundColor: colors.surface }]}>
+              <IconSymbol size={32} name="clock" color={colors.textTertiary} />
+              <Text style={[styles.emptyListText, { color: colors.textSecondary }]}>
+                Aún no hay movimientos hoy
+              </Text>
+            </View>
+          ) : (
+            <View style={[styles.transactionsList, { backgroundColor: colors.surface }, Shadows.xs]}>
+              {transacciones.slice(0, 10).map((trans, index) => {
+                const categoria = getCategoriaById(trans.categoria);
+                return (
+                  <React.Fragment key={trans.id}>
+                    {index > 0 && <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />}
+                    <TransactionItem
+                      id={trans.id || ''}
+                      title={categoria?.nombre || trans.concepto}
+                      subtitle={trans.banco}
+                      timestamp={new Date(trans.fecha).toLocaleTimeString('es-MX', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                      amount={trans.monto}
+                      type={trans.tipo === 'ingreso' ? 'income' : 'expense'}
+                      icon={categoria?.icono || 'circle'}
+                      iconColor={categoria?.color || '#888'}
+                      commission={trans.comision}
+                      voided={trans.anulada}
+                      onLongPress={() => !trans.anulada && handleReversarTransaccion(trans)}
+                      index={0}
                     />
-                  </View>
-                  <View style={styles.transContent}>
-                    <Text style={[
-                      styles.transTitle,
-                      isDark && styles.textDark,
-                      trans.anulada && { textDecorationLine: 'line-through', color: isDark ? '#555' : '#999' }
-                    ]}>
-                      {categoria?.nombre || trans.concepto} {trans.anulada ? '(Anulada)' : ''}
-                    </Text>
-                    <Text style={[styles.transTime, isDark && styles.textDarkSecondary]}>
-                      {trans.banco ? `${trans.banco} • ` : ''}
-                      {new Date(trans.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                  </View>
-                  <View style={styles.transAmountCol}>
-                    <Text style={[
-                      styles.transAmount,
-                      { color: trans.anulada ? (isDark ? '#555' : '#999') : (trans.tipo === 'ingreso' ? '#34C759' : '#FF3B30') },
-                      trans.anulada && { textDecorationLine: 'line-through' }
-                    ]}>
-                      {trans.tipo === 'ingreso' ? '+' : '-'}${trans.monto.toFixed(2)}
-                    </Text>
-                    {!trans.anulada && trans.comision > 0 && (
-                      <Text style={styles.transCom}>+${trans.comision.toFixed(2)}</Text>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
+                  </React.Fragment>
+                );
+              })}
+            </View>
+          )}
+        </Animated.View>
 
-        <View style={{ height: 100 }} />
+        {/* Bottom Spacing for Tab Bar */}
+        <View style={{ height: 120 }} />
       </ScrollView>
     </View>
   );
@@ -522,154 +507,77 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
-  },
-  containerDark: {
-    backgroundColor: '#000',
   },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
 
-  // Empty State
-  emptyStateContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 30,
-    marginTop: -50,
-  },
-  emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: '#FF6B0015',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  emptyIconDark: {
-    backgroundColor: '#333',
-  },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 15,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 30,
-    lineHeight: 22,
-  },
-  openCajaButton: {
-    width: '100%',
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#FF6B00',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  openCajaGradient: {
-    paddingVertical: 18,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 10,
-  },
-  openCajaText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  // Header
   headerSimple: {
     paddingTop: 60,
     paddingBottom: 20,
-    paddingHorizontal: 20,
-    backgroundColor: '#fff',
-  },
-  headerSimpleDark: {
-    backgroundColor: '#1c1c1e',
+    paddingHorizontal: Spacing.lg,
+    ...Shadows.sm,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: '800',
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#666',
     marginTop: 4,
   },
 
-  // Logged In UI
+  // Top Bar
   topBar: {
     paddingTop: 60,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
+    paddingBottom: Spacing.base,
+    paddingHorizontal: Spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-  },
-  topBarDark: {
-    backgroundColor: '#000',
   },
   topBarTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#000',
+    letterSpacing: -0.3,
   },
   topBarDate: {
     fontSize: 13,
-    color: '#666',
     textTransform: 'capitalize',
+    marginTop: 2,
   },
   closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#fff',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  closeButtonDark: {
-    backgroundColor: '#1c1c1e',
+    ...Shadows.sm,
   },
 
+  // Scroll
   scrollContent: {
     flex: 1,
   },
   scrollContentContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: Spacing.lg,
     paddingBottom: 40,
   },
 
   // Balance Card
   balanceCard: {
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 20,
-    shadowColor: '#FF6B00',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 8,
+    borderRadius: Radius.xxl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
   },
   balanceCardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 24,
+    marginBottom: Spacing.lg,
   },
   balanceLabel: {
     color: 'rgba(255,255,255,0.8)',
@@ -681,20 +589,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 36,
     fontWeight: '800',
+    letterSpacing: -1,
   },
   balanceIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   balanceStatsRow: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(0,0,0,0.1)',
-    borderRadius: 16,
-    padding: 12,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
   },
   balanceStatItem: {
     flex: 1,
@@ -708,235 +617,135 @@ const styles = StyleSheet.create({
   balanceStatLabel: {
     color: 'rgba(255,255,255,0.7)',
     fontSize: 11,
+    fontWeight: '500',
     marginBottom: 2,
   },
   balanceStatValue: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
+  },
+
+  // Canales Section
+  canalesSection: {
+    marginTop: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.2)',
+    paddingTop: Spacing.base,
+  },
+  canalesToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  canalesToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  canalesToggleText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  canalesList: {
+    marginTop: Spacing.base,
+  },
+  canalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+  },
+  canalItemBorder: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+  },
+  canalInfo: {
+    flex: 1,
+  },
+  canalName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 2,
+  },
+  canalMovimientos: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  canalMovimiento: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '500',
+  },
+  canalSaldo: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
   },
 
   // Summary Row
   summaryRow: {
     flexDirection: 'row',
-    marginBottom: 30,
+    gap: Spacing.sm,
+    marginBottom: Spacing.xl,
   },
   summaryItem: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 16,
+    borderRadius: Radius.xl,
+    padding: Spacing.base,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    gap: Spacing.md,
   },
   summaryIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#888',
     fontWeight: '500',
   },
   summaryValue: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
   },
 
-  // Actions Grid
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: 16,
-    marginLeft: 4,
-  },
-  actionsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 12,
-  },
-  actionBtn: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingVertical: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  actionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  actionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#000',
-  },
+  // More Actions Button
   moreActionsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
-    padding: 14,
-    borderRadius: 16,
-    marginBottom: 30,
+    padding: Spacing.md,
+    borderRadius: Radius.lg,
+    marginTop: Spacing.sm,
     gap: 6,
   },
   moreActionsText: {
     fontSize: 14,
-    fontWeight: '600',
-  },
-
-  // Channels Section
-  channelsSection: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 6,
-    marginBottom: 10,
-  },
-  channelsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 14,
-  },
-  channelsHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  channelsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-  },
-  channelsList: {
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-  },
-  channelItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  channelBorder: {
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-  },
-  channelInfo: {
-    flex: 1,
-  },
-  channelName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 2,
-  },
-  channelFlow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  flowIn: {
-    fontSize: 11,
-    color: '#34C759',
     fontWeight: '500',
-  },
-  flowOut: {
-    fontSize: 11,
-    color: '#FF3B30',
-    fontWeight: '500',
-  },
-  channelBalance: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#000',
   },
 
   // Transactions List
+  transactionsList: {
+    borderRadius: Radius.xl,
+    overflow: 'hidden',
+  },
   emptyList: {
-    backgroundColor: '#fff',
-    padding: 30,
-    borderRadius: 16,
+    borderRadius: Radius.xl,
+    padding: Spacing.xxl,
     alignItems: 'center',
+    gap: Spacing.sm,
   },
   emptyListText: {
-    color: '#888',
+    fontSize: 14,
   },
-  transactionsList: {
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    paddingVertical: 10,
+  divider: {
+    height: 1,
+    marginHorizontal: Spacing.base,
   },
-  transItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  transBorder: {
-    borderTopWidth: 1,
-    borderTopColor: '#f2f2f2',
-  },
-  transBorderDark: {
-    borderTopColor: '#222',
-  },
-  transIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  transContent: {
-    flex: 1,
-  },
-  transTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 2,
-  },
-  transTime: {
-    fontSize: 12,
-    color: '#999',
-  },
-  transAmountCol: {
-    alignItems: 'flex-end',
-  },
-  transAmount: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  transCom: {
-    fontSize: 11,
-    color: '#FF6B00',
-    fontWeight: '500',
-    marginTop: 2,
-  },
-
-  // Dark Mode Styles
-  textDark: { color: '#fff' },
-  textDarkSecondary: { color: '#888' },
-  cardDark: { backgroundColor: '#1c1c1e' },
 });

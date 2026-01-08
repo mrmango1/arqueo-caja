@@ -1,11 +1,14 @@
+import { AnimatedButton } from '@/components/ui/animated-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { db } from '@/config/firebase';
+import { BrandColors, Colors, Gradients, Radius, SemanticColors, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Caja, SaldoCanalInicial, Transaccion } from '@/types/caja';
 import { isValidNumber, parseLocalizedFloat } from '@/utils/numbers';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
 import { get, onValue, ref, update } from 'firebase/database';
 import React, { useEffect, useState } from 'react';
@@ -21,11 +24,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 export default function CerrarCajaScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const colors = Colors[isDark ? 'dark' : 'light'];
   const { user } = useAuth();
   const { canalesActivos } = useCanales();
 
@@ -37,7 +42,6 @@ export default function CerrarCajaScreen() {
   const [saving, setSaving] = useState(false);
   const isClosing = React.useRef(false);
 
-  // Estado para saldos calculados por canal
   const [saldosCanalesCalculados, setSaldosCanalesCalculados] = useState<{
     [canalNombre: string]: {
       saldoInicial: number;
@@ -83,7 +87,6 @@ export default function CerrarCajaScreen() {
         setTransacciones(trans);
         setLoading(false);
       } else {
-        // Solo mostramos error si NO estamos cerrando la caja intencionalmente
         if (!isClosing.current) {
           Alert.alert('Error', 'No hay caja abierta', [
             { text: 'OK', onPress: () => router.back() }
@@ -95,14 +98,11 @@ export default function CerrarCajaScreen() {
     return () => unsubscribe();
   }, [user]);
 
-  // Calcular saldos por canal cuando cambian las transacciones o la caja
   useEffect(() => {
     if (!cajaActual) return;
 
-    // Obtener saldos iniciales de la caja (si existen)
     const saldosIniciales: SaldoCanalInicial[] = (cajaActual as any).saldosCanales || [];
 
-    // Inicializar el objeto de saldos por canal
     const saldosPorCanal: {
       [canalNombre: string]: {
         saldoInicial: number;
@@ -112,7 +112,6 @@ export default function CerrarCajaScreen() {
       };
     } = {};
 
-    // Inicializar con saldos iniciales guardados
     saldosIniciales.forEach((saldo) => {
       saldosPorCanal[saldo.canalNombre] = {
         saldoInicial: saldo.saldo,
@@ -122,7 +121,6 @@ export default function CerrarCajaScreen() {
       };
     });
 
-    // También incluir canales activos que no tengan saldo inicial registrado
     canalesActivos.forEach((canal) => {
       if (!saldosPorCanal[canal.nombre]) {
         saldosPorCanal[canal.nombre] = {
@@ -134,14 +132,12 @@ export default function CerrarCajaScreen() {
       }
     });
 
-    // Calcular movimientos por canal basándose en transacciones
     transacciones.forEach((trans) => {
-      if (!trans.banco) return; // No tiene canal asociado
-      if (trans.anulada) return; // Transacción anulada
+      if (!trans.banco) return;
+      if (trans.anulada) return;
 
       const bancoNombre = trans.banco;
 
-      // Si el canal no está en nuestro registro, agregarlo
       if (!saldosPorCanal[bancoNombre]) {
         saldosPorCanal[bancoNombre] = {
           saldoInicial: 0,
@@ -151,16 +147,10 @@ export default function CerrarCajaScreen() {
         };
       }
 
-      // Los depósitos (cliente deposita) disminuyen el saldo del canal
-      // (porque usamos nuestro saldo bancario para hacer el depósito)
-      // Los retiros (cliente retira) aumentan el saldo del canal  
-      // (porque recibimos efectivo y transferimos desde la cuenta)
       if (trans.categoria === 'deposito') {
-        // Depósito bancario: el cliente deposita efectivo, nosotros incrementamos nuestra cuenta bancaria
         saldosPorCanal[bancoNombre].depositos += trans.monto;
         saldosPorCanal[bancoNombre].saldoEsperado += trans.monto;
       } else if (trans.categoria === 'retiro') {
-        // Retiro bancario: el cliente retira efectivo, nosotros disminuimos nuestra cuenta bancaria
         saldosPorCanal[bancoNombre].retiros += trans.monto;
         saldosPorCanal[bancoNombre].saldoEsperado -= trans.monto;
       }
@@ -234,8 +224,8 @@ export default function CerrarCajaScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centered, isDark && styles.containerDark]}>
-        <ActivityIndicator size="large" color="#FF3B30" />
+      <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={SemanticColors.error} />
       </View>
     );
   }
@@ -249,17 +239,20 @@ export default function CerrarCajaScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, isDark && styles.containerDark]}
+      style={[styles.container, { backgroundColor: colors.background }]}
     >
       <Stack.Screen options={{
         title: 'Arqueo de Caja',
-        headerStyle: { backgroundColor: isDark ? '#1c1c1e' : '#fff' },
-        headerTintColor: '#FF3B30',
-        headerShadowVisible: true,
+        headerStyle: { backgroundColor: isDark ? colors.surface : '#fff' },
+        headerTintColor: SemanticColors.error,
+        headerShadowVisible: false,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: -8 }}>
-            <IconSymbol size={28} name="chevron.left" color="#FF3B30" />
-            <Text style={{ color: '#FF3B30', fontSize: 17, marginLeft: -4 }}>Atrás</Text>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <IconSymbol size={28} name="chevron.left" color={SemanticColors.error} />
+            <Text style={styles.backText}>Atrás</Text>
           </TouchableOpacity>
         )
       }} />
@@ -270,223 +263,206 @@ export default function CerrarCajaScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Resumen del día */}
-        <View style={[styles.summaryCard, isDark && styles.cardDark]}>
-          <View style={styles.summaryHeader}>
-            <IconSymbol size={18} name="chart.bar.fill" color="#FF6B00" />
-            <Text style={[styles.summaryTitle, isDark && styles.textDark]}>Resumen del Día</Text>
-          </View>
-
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, isDark && styles.textDarkSecondary]}>Efectivo inicial</Text>
-            <Text style={[styles.summaryValue, isDark && styles.textDark]}>${cajaActual.montoInicial.toFixed(2)}</Text>
-          </View>
-
-          <View style={styles.summaryDivider} />
-
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryLabelRow}>
-              <View style={[styles.summaryDot, { backgroundColor: '#34C759' }]} />
-              <Text style={[styles.summaryLabel, isDark && styles.textDarkSecondary]}>Depósitos recibidos</Text>
-            </View>
-            <Text style={[styles.summaryValue, { color: '#34C759' }]}>+${totalDepositos.toFixed(2)}</Text>
-          </View>
-
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryLabelRow}>
-              <View style={[styles.summaryDot, { backgroundColor: '#FF3B30' }]} />
-              <Text style={[styles.summaryLabel, isDark && styles.textDarkSecondary]}>Retiros entregados</Text>
-            </View>
-            <Text style={[styles.summaryValue, { color: '#FF3B30' }]}>-${totalRetiros.toFixed(2)}</Text>
-          </View>
-
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryLabelRow}>
-              <View style={[styles.summaryDot, { backgroundColor: '#FF6B00' }]} />
-              <Text style={[styles.summaryLabel, isDark && styles.textDarkSecondary]}>Comisiones</Text>
-            </View>
-            <Text style={[styles.summaryValue, { color: '#FF6B00' }]}>+${totalComisiones.toFixed(2)}</Text>
-          </View>
-
-          <View style={styles.summaryDivider} />
-
-          <View style={styles.summaryTotal}>
-            <Text style={[styles.totalLabel, isDark && styles.textDark]}>Saldo Esperado</Text>
-            <Text style={styles.totalValue}>${saldoEsperado.toFixed(2)}</Text>
-          </View>
-
-          {/* Stats */}
-          <View style={styles.statsRow}>
-            <View style={[styles.statBox, isDark && styles.statBoxDark]}>
-              <Text style={[styles.statValue, isDark && styles.textDark]}>{transacciones.length}</Text>
-              <Text style={[styles.statLabel, isDark && styles.textDarkSecondary]}>Operaciones</Text>
-            </View>
-            <View style={[styles.statBox, isDark && styles.statBoxDark]}>
-              <Text style={[styles.statValue, { color: '#FF6B00' }]}>${totalComisiones.toFixed(2)}</Text>
-              <Text style={[styles.statLabel, isDark && styles.textDarkSecondary]}>Tu ganancia</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Saldos en Canales de Transacción */}
-        {Object.keys(saldosCanalesCalculados).length > 0 && (
-          <View style={[styles.summaryCard, isDark && styles.cardDark]}>
+        {/* Summary Card */}
+        <Animated.View entering={FadeInUp.delay(100).springify()}>
+          <LinearGradient
+            colors={Gradients.sunset}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.summaryCard, Shadows.lg]}
+          >
             <View style={styles.summaryHeader}>
-              <IconSymbol size={18} name="building.columns.fill" color="#007AFF" />
-              <Text style={[styles.summaryTitle, isDark && styles.textDark]}>Saldos en Canales</Text>
-            </View>
-
-            <Text style={[styles.canalSubtitle, isDark && styles.textDarkSecondary]}>
-              Balance esperado en cada cuenta bancaria
-            </Text>
-
-            {Object.entries(saldosCanalesCalculados).map(([canalNombre, datos], index) => (
-              <View key={canalNombre}>
-                {index > 0 && <View style={[styles.summaryDivider, { marginVertical: 12 }]} />}
-
-                <View style={styles.canalRow}>
-                  <View style={styles.canalInfo}>
-                    <View style={[styles.canalIcon, { backgroundColor: '#007AFF15' }]}>
-                      <IconSymbol size={14} name="building.columns" color="#007AFF" />
-                    </View>
-                    <Text style={[styles.canalName, isDark && styles.textDark]} numberOfLines={1}>
-                      {canalNombre}
-                    </Text>
-                  </View>
-                  <Text style={[styles.canalSaldo, {
-                    color: datos.saldoEsperado >= 0 ? '#007AFF' : '#FF3B30'
-                  }]}>
-                    ${datos.saldoEsperado.toFixed(2)}
-                  </Text>
-                </View>
-
-                <View style={styles.canalDetalles}>
-                  <View style={styles.canalDetalleRow}>
-                    <Text style={[styles.canalDetalleLabel, isDark && styles.textDarkSecondary]}>
-                      Saldo inicial:
-                    </Text>
-                    <Text style={[styles.canalDetalleValue, isDark && styles.textDarkSecondary]}>
-                      ${datos.saldoInicial.toFixed(2)}
-                    </Text>
-                  </View>
-                  {datos.depositos > 0 && (
-                    <View style={styles.canalDetalleRow}>
-                      <Text style={[styles.canalDetalleLabel, isDark && styles.textDarkSecondary]}>
-                        + Depósitos:
-                      </Text>
-                      <Text style={[styles.canalDetalleValue, { color: '#34C759' }]}>
-                        +${datos.depositos.toFixed(2)}
-                      </Text>
-                    </View>
-                  )}
-                  {datos.retiros > 0 && (
-                    <View style={styles.canalDetalleRow}>
-                      <Text style={[styles.canalDetalleLabel, isDark && styles.textDarkSecondary]}>
-                        - Retiros:
-                      </Text>
-                      <Text style={[styles.canalDetalleValue, { color: '#FF3B30' }]}>
-                        -${datos.retiros.toFixed(2)}
-                      </Text>
-                    </View>
-                  )}
-                </View>
+              <View>
+                <Text style={styles.summaryHeaderLabel}>Saldo Esperado</Text>
+                <Text style={styles.summaryHeaderValue}>${saldoEsperado.toFixed(2)}</Text>
               </View>
-            ))}
-
-            {/* Total de todos los canales */}
-            <View style={[styles.summaryDivider, { marginTop: 16, marginBottom: 12 }]} />
-            <View style={styles.canalTotalRow}>
-              <Text style={[styles.totalLabel, isDark && styles.textDark]}>Total en Canales</Text>
-              <Text style={styles.canalTotalValue}>
-                ${Object.values(saldosCanalesCalculados).reduce((sum, datos) => sum + datos.saldoEsperado, 0).toFixed(2)}
-              </Text>
+              <View style={styles.summaryIconBg}>
+                <IconSymbol size={24} name="chart.bar.fill" color="#fff" />
+              </View>
             </View>
-          </View>
+
+            <View style={styles.summaryStatsRow}>
+              <View style={styles.summaryStatItem}>
+                <View style={[styles.summaryDot, { backgroundColor: SemanticColors.success }]} />
+                <Text style={styles.summaryStatLabel}>Depósitos</Text>
+                <Text style={styles.summaryStatValue}>+${totalDepositos.toFixed(0)}</Text>
+              </View>
+              <View style={styles.summaryStatDivider} />
+              <View style={styles.summaryStatItem}>
+                <View style={[styles.summaryDot, { backgroundColor: SemanticColors.error }]} />
+                <Text style={styles.summaryStatLabel}>Retiros</Text>
+                <Text style={styles.summaryStatValue}>-${totalRetiros.toFixed(0)}</Text>
+              </View>
+              <View style={styles.summaryStatDivider} />
+              <View style={styles.summaryStatItem}>
+                <View style={[styles.summaryDot, { backgroundColor: BrandColors.primary }]} />
+                <Text style={styles.summaryStatLabel}>Comisiones</Text>
+                <Text style={styles.summaryStatValue}>+${totalComisiones.toFixed(0)}</Text>
+              </View>
+            </View>
+
+            <View style={styles.statsRow}>
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>{transacciones.length}</Text>
+                <Text style={styles.statLabel}>Operaciones</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={[styles.statValue, { color: '#FFD700' }]}>${totalComisiones.toFixed(2)}</Text>
+                <Text style={styles.statLabel}>Tu ganancia</Text>
+              </View>
+            </View>
+          </LinearGradient>
+        </Animated.View>
+
+        {/* Channel Balances */}
+        {Object.keys(saldosCanalesCalculados).length > 0 && (
+          <Animated.View entering={FadeInUp.delay(200).springify()}>
+            <View style={[styles.channelsCard, { backgroundColor: colors.surface }, Shadows.sm]}>
+              <View style={styles.channelsHeader}>
+                <IconSymbol size={18} name="building.columns.fill" color="#007AFF" />
+                <Text style={[styles.channelsTitle, { color: colors.text }]}>Saldos en Canales</Text>
+              </View>
+              <Text style={[styles.channelsSubtitle, { color: colors.textTertiary }]}>
+                Balance esperado en cada cuenta bancaria
+              </Text>
+
+              {Object.entries(saldosCanalesCalculados).map(([canalNombre, datos], index) => (
+                <View key={canalNombre}>
+                  {index > 0 && <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />}
+                  <View style={styles.channelRow}>
+                    <View style={styles.channelInfo}>
+                      <View style={[styles.channelIcon, { backgroundColor: '#007AFF15' }]}>
+                        <IconSymbol size={14} name="building.columns" color="#007AFF" />
+                      </View>
+                      <Text style={[styles.channelName, { color: colors.text }]} numberOfLines={1}>
+                        {canalNombre}
+                      </Text>
+                    </View>
+                    <Text style={[styles.channelSaldo, { color: datos.saldoEsperado >= 0 ? '#007AFF' : SemanticColors.error }]}>
+                      ${datos.saldoEsperado.toFixed(2)}
+                    </Text>
+                  </View>
+                  <View style={styles.channelDetails}>
+                    <View style={styles.channelDetailRow}>
+                      <Text style={[styles.channelDetailLabel, { color: colors.textTertiary }]}>Saldo inicial:</Text>
+                      <Text style={[styles.channelDetailValue, { color: colors.textSecondary }]}>${datos.saldoInicial.toFixed(2)}</Text>
+                    </View>
+                    {datos.depositos > 0 && (
+                      <View style={styles.channelDetailRow}>
+                        <Text style={[styles.channelDetailLabel, { color: colors.textTertiary }]}>+ Depósitos:</Text>
+                        <Text style={[styles.channelDetailValue, { color: SemanticColors.success }]}>+${datos.depositos.toFixed(2)}</Text>
+                      </View>
+                    )}
+                    {datos.retiros > 0 && (
+                      <View style={styles.channelDetailRow}>
+                        <Text style={[styles.channelDetailLabel, { color: colors.textTertiary }]}>- Retiros:</Text>
+                        <Text style={[styles.channelDetailValue, { color: SemanticColors.error }]}>-${datos.retiros.toFixed(2)}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              ))}
+
+              <View style={[styles.divider, { backgroundColor: colors.borderLight, marginTop: Spacing.base }]} />
+              <View style={styles.channelsTotalRow}>
+                <Text style={[styles.channelsTotalLabel, { color: colors.text }]}>Total en Canales</Text>
+                <Text style={styles.channelsTotalValue}>
+                  ${Object.values(saldosCanalesCalculados).reduce((sum, datos) => sum + datos.saldoEsperado, 0).toFixed(2)}
+                </Text>
+              </View>
+            </View>
+          </Animated.View>
         )}
 
-        {/* Conteo de efectivo */}
-        <View style={[styles.countCard, isDark && styles.cardDark]}>
-          <View style={styles.countHeader}>
-            <IconSymbol size={18} name="banknote.fill" color="#FF3B30" />
-            <Text style={[styles.countTitle, isDark && styles.textDark]}>Conteo de Efectivo</Text>
-          </View>
-
-          <Text style={[styles.inputLabel, isDark && styles.textDarkSecondary]}>
-            Saldo Real Contado
-          </Text>
-          <View style={[styles.amountInputWrapper, isDark && styles.amountInputWrapperDark]}>
-            <Text style={styles.currencySymbol}>$</Text>
-            <TextInput
-              style={[styles.amountInput, isDark && styles.textDark]}
-              placeholder="0.00"
-              placeholderTextColor={isDark ? '#444' : '#ccc'}
-              value={saldoReal}
-              onChangeText={setSaldoReal}
-              keyboardType="decimal-pad"
-              editable={!saving}
-            />
-          </View>
-
-          {/* Indicador de diferencia */}
-          {hasDiferencia && (
-            <View style={[
-              styles.diferenciaCard,
-              diferencia === 0 ? styles.diferenciaOk : diferencia > 0 ? styles.diferenciaSobrante : styles.diferenciaFaltante
-            ]}>
-              <IconSymbol
-                size={22}
-                name={diferencia === 0 ? 'checkmark.circle.fill' : 'exclamationmark.triangle.fill'}
-                color={diferencia === 0 ? '#34C759' : diferencia > 0 ? '#007AFF' : '#FF3B30'}
-              />
-              <View style={styles.diferenciaContent}>
-                <Text style={[styles.diferenciaLabel, isDark && styles.textDarkSecondary]}>
-                  {diferencia === 0 ? '¡Cuadra perfecto!' : diferencia > 0 ? 'Sobrante' : 'Faltante'}
-                </Text>
-                <Text style={[
-                  styles.diferenciaValue,
-                  { color: diferencia === 0 ? '#34C759' : diferencia > 0 ? '#007AFF' : '#FF3B30' }
-                ]}>
-                  {diferencia >= 0 ? '+' : ''}${diferencia.toFixed(2)}
-                </Text>
-              </View>
+        {/* Cash Count Card */}
+        <Animated.View entering={FadeInUp.delay(300).springify()}>
+          <View style={[styles.countCard, { backgroundColor: colors.surface }, Shadows.sm]}>
+            <View style={styles.countHeader}>
+              <IconSymbol size={18} name="banknote.fill" color={SemanticColors.error} />
+              <Text style={[styles.countTitle, { color: colors.text }]}>Conteo de Efectivo</Text>
             </View>
-          )}
 
-          {/* Notas */}
-          <View style={styles.notesSection}>
-            <Text style={[styles.inputLabel, isDark && styles.textDarkSecondary]}>
-              Observaciones
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              SALDO REAL CONTADO
             </Text>
-            <TextInput
-              style={[styles.notesInput, isDark && styles.notesInputDark]}
-              placeholder="Notas del cierre..."
-              placeholderTextColor={isDark ? '#555' : '#aaa'}
-              value={notas}
-              onChangeText={setNotas}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-              editable={!saving}
-            />
-          </View>
-        </View>
+            <View style={[styles.amountInputWrapper, { backgroundColor: colors.inputBackground }]}>
+              <Text style={styles.currencySymbol}>$</Text>
+              <TextInput
+                style={[styles.amountInput, { color: colors.text }]}
+                placeholder="0.00"
+                placeholderTextColor={colors.inputPlaceholder}
+                value={saldoReal}
+                onChangeText={setSaldoReal}
+                keyboardType="decimal-pad"
+                editable={!saving}
+              />
+            </View>
 
-        {/* Botón de cerrar */}
-        <TouchableOpacity
-          style={[styles.submitButton, saving && styles.submitButtonDisabled]}
-          onPress={handleCerrarCaja}
-          disabled={saving}
-          activeOpacity={0.8}
-        >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <IconSymbol size={20} name="lock.fill" color="#fff" />
-              <Text style={styles.submitText}>Confirmar Cierre</Text>
-            </>
-          )}
-        </TouchableOpacity>
+            {/* Difference Indicator */}
+            {hasDiferencia && (
+              <Animated.View
+                entering={FadeInDown.springify()}
+                style={[
+                  styles.diferenciaCard,
+                  diferencia === 0
+                    ? { backgroundColor: SemanticColors.successLight }
+                    : diferencia > 0
+                      ? { backgroundColor: SemanticColors.infoLight }
+                      : { backgroundColor: SemanticColors.errorLight }
+                ]}
+              >
+                <IconSymbol
+                  size={24}
+                  name={diferencia === 0 ? 'checkmark.circle.fill' : 'exclamationmark.triangle.fill'}
+                  color={diferencia === 0 ? SemanticColors.success : diferencia > 0 ? SemanticColors.info : SemanticColors.error}
+                />
+                <View style={styles.diferenciaContent}>
+                  <Text style={[styles.diferenciaLabel, { color: colors.textSecondary }]}>
+                    {diferencia === 0 ? '¡Cuadra perfecto!' : diferencia > 0 ? 'Sobrante' : 'Faltante'}
+                  </Text>
+                  <Text style={[
+                    styles.diferenciaValue,
+                    { color: diferencia === 0 ? SemanticColors.success : diferencia > 0 ? SemanticColors.info : SemanticColors.error }
+                  ]}>
+                    {diferencia >= 0 ? '+' : ''}${diferencia.toFixed(2)}
+                  </Text>
+                </View>
+              </Animated.View>
+            )}
+
+            {/* Notes */}
+            <View style={styles.notesSection}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                OBSERVACIONES
+              </Text>
+              <TextInput
+                style={[styles.notesInput, { backgroundColor: colors.inputBackground, color: colors.text }]}
+                placeholder="Notas del cierre..."
+                placeholderTextColor={colors.inputPlaceholder}
+                value={notas}
+                onChangeText={setNotas}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+                editable={!saving}
+              />
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Submit Button */}
+        <Animated.View entering={FadeInUp.delay(400).springify()} style={{ marginTop: Spacing.lg }}>
+          <AnimatedButton
+            title={saving ? 'Procesando...' : 'Confirmar Cierre'}
+            onPress={handleCerrarCaja}
+            variant="danger"
+            icon="lock.fill"
+            loading={saving}
+            disabled={saving}
+            fullWidth
+            size="lg"
+          />
+        </Animated.View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -497,193 +473,254 @@ export default function CerrarCajaScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f7',
-  },
-  containerDark: {
-    backgroundColor: '#000',
   },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  // Header
-
-
-  // Scroll
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: -8,
+  },
+  backText: {
+    color: SemanticColors.error,
+    fontSize: 17,
+    marginLeft: -4,
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    padding: Spacing.lg,
   },
 
-  // Summary card
+  // Summary Card
   summaryCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-  },
-  cardDark: {
-    backgroundColor: '#1c1c1e',
+    borderRadius: Radius.xxl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.base,
   },
   summaryHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 18,
-  },
-  summaryTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000',
-  },
-  summaryRow: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+    alignItems: 'flex-start',
+    marginBottom: Spacing.lg,
   },
-  summaryLabelRow: {
-    flexDirection: 'row',
+  summaryHeaderLabel: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  summaryHeaderValue: {
+    color: '#fff',
+    fontSize: 36,
+    fontWeight: '800',
+    letterSpacing: -1,
+  },
+  summaryIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+  },
+  summaryStatsRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.15)',
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.base,
+  },
+  summaryStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  summaryStatDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginVertical: 4,
   },
   summaryDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginBottom: 4,
   },
-  summaryLabel: {
+  summaryStatLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 10,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  summaryStatValue: {
+    color: '#fff',
     fontSize: 14,
-    color: '#888',
-  },
-  summaryValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#000',
-  },
-  summaryDivider: {
-    height: 1,
-    backgroundColor: '#f0f0f0',
-    marginVertical: 12,
-  },
-  summaryTotal: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  totalLabel: {
-    fontSize: 15,
     fontWeight: '700',
-    color: '#000',
-  },
-  totalValue: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#FF6B00',
   },
   statsRow: {
     flexDirection: 'row',
-    marginTop: 18,
-    gap: 12,
+    gap: Spacing.sm,
   },
   statBox: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: Radius.md,
+    padding: Spacing.md,
     alignItems: 'center',
-  },
-  statBoxDark: {
-    backgroundColor: '#2a2a2a',
   },
   statValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
+    color: '#fff',
   },
   statLabel: {
     fontSize: 11,
-    color: '#888',
-    marginTop: 4,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
   },
 
-  // Count card
+  // Channels Card
+  channelsCard: {
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.base,
+  },
+  channelsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 4,
+  },
+  channelsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  channelsSubtitle: {
+    fontSize: 12,
+    marginBottom: Spacing.base,
+  },
+  channelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: Spacing.sm,
+  },
+  channelInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 10,
+  },
+  channelIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  channelName: {
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  channelSaldo: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  channelDetails: {
+    marginLeft: 38,
+    marginTop: Spacing.xs,
+    gap: 2,
+  },
+  channelDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  channelDetailLabel: {
+    fontSize: 12,
+  },
+  channelDetailValue: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  channelsTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: Spacing.md,
+  },
+  channelsTotalLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  channelsTotalValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#007AFF',
+  },
+  divider: {
+    height: 1,
+    marginVertical: Spacing.md,
+  },
+
+  // Count Card
   countCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
   },
   countHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 18,
+    marginBottom: Spacing.lg,
   },
   countTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#000',
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#888',
-    marginBottom: 10,
-    textTransform: 'uppercase',
+    marginBottom: Spacing.sm,
     letterSpacing: 0.5,
   },
   amountInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderRadius: 14,
-    paddingHorizontal: 16,
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.base,
     borderWidth: 2,
-    borderColor: '#FF3B30',
-  },
-  amountInputWrapperDark: {
-    backgroundColor: '#2a2a2a',
+    borderColor: SemanticColors.error,
   },
   currencySymbol: {
     fontSize: 28,
     fontWeight: '300',
-    color: '#FF3B30',
+    color: SemanticColors.error,
   },
   amountInput: {
     flex: 1,
     fontSize: 34,
     fontWeight: '700',
-    color: '#000',
-    paddingVertical: 12,
-    marginLeft: 8,
+    paddingVertical: Spacing.md,
+    marginLeft: Spacing.sm,
   },
   diferenciaCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 14,
-    padding: 14,
-    marginTop: 16,
-    gap: 12,
-  },
-  diferenciaOk: {
-    backgroundColor: '#34C75915',
-  },
-  diferenciaSobrante: {
-    backgroundColor: '#007AFF15',
-  },
-  diferenciaFaltante: {
-    backgroundColor: '#FF3B3015',
+    borderRadius: Radius.lg,
+    padding: Spacing.base,
+    marginTop: Spacing.base,
+    gap: Spacing.md,
   },
   diferenciaContent: {
     flex: 1,
   },
   diferenciaLabel: {
     fontSize: 13,
-    color: '#888',
   },
   diferenciaValue: {
     fontSize: 26,
@@ -691,110 +728,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   notesSection: {
-    marginTop: 20,
+    marginTop: Spacing.lg,
   },
   notesInput: {
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: Radius.md,
+    padding: Spacing.base,
     fontSize: 15,
-    color: '#000',
     minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  notesInputDark: {
-    backgroundColor: '#2a2a2a',
-    color: '#fff',
-  },
-
-  // Submit
-  submitButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF3B30',
-    borderRadius: 14,
-    paddingVertical: 18,
-    gap: 10,
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-
-  textDark: {
-    color: '#fff',
-  },
-  textDarkSecondary: {
-    color: '#888',
-  },
-
-  // Canales section
-  canalSubtitle: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 16,
-  },
-  canalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  canalInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 10,
-  },
-  canalIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  canalName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    flex: 1,
-  },
-  canalSaldo: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  canalDetalles: {
-    marginLeft: 38,
-    marginTop: 8,
-    gap: 4,
-  },
-  canalDetalleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  canalDetalleLabel: {
-    fontSize: 12,
-    color: '#888',
-  },
-  canalDetalleValue: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#888',
-  },
-  canalTotalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  canalTotalValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#007AFF',
   },
 });

@@ -1,5 +1,8 @@
+import { AnimatedButton } from '@/components/ui/animated-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { PremiumInput } from '@/components/ui/premium-input';
 import { auth } from '@/config/firebase';
+import { Animation, BrandColors, Colors, Gradients, Shadows, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
@@ -8,26 +11,36 @@ import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import Animated, { FadeInDown, FadeInUp, Layout } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  FadeOutUp,
+  Layout,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring
+} from 'react-native-reanimated';
 
 const { height, width } = Dimensions.get('window');
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default function LoginScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const colors = Colors[isDark ? 'dark' : 'light'];
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +51,7 @@ export default function LoginScreen() {
   const [isRegister, setIsRegister] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const [focusedInput, setFocusedInput] = useState<string | null>(null);
+  const logoScale = useSharedValue(1);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -47,6 +60,12 @@ export default function LoginScreen() {
 
   const handleAuth = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // Animate logo
+    logoScale.value = withSequence(
+      withSpring(0.9, Animation.spring.snappy),
+      withSpring(1, Animation.spring.bouncy)
+    );
 
     if (!email || !password) {
       Alert.alert('Error', 'Completa todos los campos obligatorios');
@@ -75,10 +94,8 @@ export default function LoginScreen() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Actualizar perfil de usuario (DisplayName)
         await updateProfile(user, { displayName: nombreUsuario });
 
-        // Guardar configuración inicial del negocio
         const initialConfig = {
           nombreNegocio: nombreNegocio,
           direccion: '',
@@ -89,15 +106,16 @@ export default function LoginScreen() {
         };
         await AsyncStorage.setItem(`config_${user.uid}`, JSON.stringify(initialConfig));
 
-        // Ir a onboarding para configurar canales y comisiones
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.replace('/onboarding');
 
       } else {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Verificar si ya completó el onboarding
         const onboardingCompleted = await AsyncStorage.getItem(`onboarding_completed_${user.uid}`);
+
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         if (onboardingCompleted === 'true') {
           router.replace('/(tabs)');
@@ -143,18 +161,35 @@ export default function LoginScreen() {
     setIsRegister(!isRegister);
   };
 
+  const logoAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: logoScale.value }],
+  }));
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, isDark && styles.containerDark]}
+      style={[styles.container, { backgroundColor: colors.background }]}
     >
-      {/* Background Decorativo */}
+      {/* Background Decorations */}
       <View style={StyleSheet.absoluteFill}>
         <LinearGradient
-          colors={isDark ? ['#1a1a1a', '#000'] : ['#f0f0f5', '#ffffff']}
+          colors={isDark ? ['#0A0A0A', '#1A1A1A', '#000'] : ['#FFF5EB', '#FFFFFF', '#FFF']}
+          locations={[0, 0.5, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <View style={[styles.circleDecoration, { backgroundColor: isDark ? 'rgba(255,107,0,0.05)' : 'rgba(255,107,0,0.08)' }]} />
+        {/* Decorative circles */}
+        <View style={[
+          styles.decorCircle1,
+          { backgroundColor: isDark ? 'rgba(255,107,0,0.08)' : 'rgba(255,107,0,0.1)' }
+        ]} />
+        <View style={[
+          styles.decorCircle2,
+          { backgroundColor: isDark ? 'rgba(255,150,0,0.05)' : 'rgba(255,107,0,0.06)' }
+        ]} />
+        <View style={[
+          styles.decorCircle3,
+          { backgroundColor: isDark ? 'rgba(255,107,0,0.03)' : 'rgba(255,107,0,0.04)' }
+        ]} />
       </View>
 
       <ScrollView
@@ -162,193 +197,122 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.scrollContent}
       >
+        {/* Logo & Header */}
         <Animated.View
           entering={FadeInDown.delay(200).springify()}
           style={styles.headerContainer}
         >
-          <View style={styles.iconContainer}>
+          <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
             <LinearGradient
-              colors={['#FF6B00', '#FF8533']}
-              style={styles.iconBackground}
+              colors={Gradients.primary}
+              style={styles.logoBackground}
             >
-              <IconSymbol size={40} name="building.columns.fill" color="#fff" />
+              <IconSymbol size={44} name="building.columns.fill" color="#fff" />
             </LinearGradient>
-          </View>
-          <Text style={[styles.appName, isDark && styles.textDark]}>Mi Negocio</Text>
-          <Text style={[styles.appTagline, isDark && styles.textDarkSecondary]}>
+          </Animated.View>
+          <Text style={[styles.appName, { color: colors.text }]}>Mi Negocio</Text>
+          <Text style={[styles.appTagline, { color: colors.textSecondary }]}>
             {isRegister ? 'Crea tu cuenta y comienza' : 'Bienvenido de nuevo'}
           </Text>
         </Animated.View>
 
+        {/* Form Container */}
         <Animated.View
           layout={Layout.springify()}
-          style={[styles.formContainer, isDark && styles.cardDark]}
+          style={styles.formContainer}
         >
-          {/* Nombre Completo - Registro */}
+          {/* Register Fields */}
           {isRegister && (
-            <Animated.View entering={FadeInUp.duration(400)} exiting={FadeInUp.duration(200)}>
-              <View style={styles.inputWrapper}>
-                <Text style={[styles.label, isDark && styles.textDarkSecondary]}>Nombre Completo</Text>
-                <View
-                  style={[
-                    styles.inputContainer,
-                    isDark && styles.inputContainerDark,
-                    focusedInput === 'nombre' && styles.inputFocused
-                  ]}
-                >
-                  <IconSymbol size={20} name="person.fill" color={focusedInput === 'nombre' ? '#FF6B00' : (isDark ? '#666' : '#999')} />
-                  <TextInput
-                    style={[styles.input, isDark && styles.inputDark]}
-                    placeholder="Tu nombre"
-                    placeholderTextColor={isDark ? '#555' : '#aaa'}
-                    value={nombreUsuario}
-                    onChangeText={setNombreUsuario}
-                    onFocus={() => setFocusedInput('nombre')}
-                    onBlur={() => setFocusedInput(null)}
-                    autoCapitalize="words"
-                    editable={!loading}
-                  />
-                </View>
-              </View>
+            <Animated.View
+              entering={FadeInUp.duration(300).springify()}
+              exiting={FadeOutUp.duration(200)}
+            >
+              <PremiumInput
+                label="Nombre Completo"
+                icon="person.fill"
+                placeholder="Tu nombre"
+                value={nombreUsuario}
+                onChangeText={setNombreUsuario}
+                autoCapitalize="words"
+                editable={!loading}
+              />
 
-              <View style={styles.inputWrapper}>
-                <Text style={[styles.label, isDark && styles.textDarkSecondary]}>Negocio</Text>
-                <View
-                  style={[
-                    styles.inputContainer,
-                    isDark && styles.inputContainerDark,
-                    focusedInput === 'negocio' && styles.inputFocused
-                  ]}
-                >
-                  <IconSymbol size={20} name="storefront.fill" color={focusedInput === 'negocio' ? '#FF6B00' : (isDark ? '#666' : '#999')} />
-                  <TextInput
-                    style={[styles.input, isDark && styles.inputDark]}
-                    placeholder="Nombre de tu negocio"
-                    placeholderTextColor={isDark ? '#555' : '#aaa'}
-                    value={nombreNegocio}
-                    onChangeText={setNombreNegocio}
-                    onFocus={() => setFocusedInput('negocio')}
-                    onBlur={() => setFocusedInput(null)}
-                    autoCapitalize="words"
-                    editable={!loading}
-                  />
-                </View>
-              </View>
+              <PremiumInput
+                label="Negocio"
+                icon="storefront.fill"
+                placeholder="Nombre de tu negocio"
+                value={nombreNegocio}
+                onChangeText={setNombreNegocio}
+                autoCapitalize="words"
+                editable={!loading}
+              />
             </Animated.View>
           )}
 
-          {/* Email */}
-          <View style={styles.inputWrapper}>
-            <Text style={[styles.label, isDark && styles.textDarkSecondary]}>Correo Electrónico</Text>
-            <View
-              style={[
-                styles.inputContainer,
-                isDark && styles.inputContainerDark,
-                focusedInput === 'email' && styles.inputFocused
-              ]}
-            >
-              <IconSymbol size={20} name="envelope.fill" color={focusedInput === 'email' ? '#FF6B00' : (isDark ? '#666' : '#999')} />
-              <TextInput
-                style={[styles.input, isDark && styles.inputDark]}
-                placeholder="ejemplo@correo.com"
-                placeholderTextColor={isDark ? '#555' : '#aaa'}
-                value={email}
-                onChangeText={setEmail}
-                onFocus={() => setFocusedInput('email')}
-                onBlur={() => setFocusedInput(null)}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                editable={!loading}
-              />
-            </View>
-          </View>
+          {/* Email & Password */}
+          <PremiumInput
+            label="Correo Electrónico"
+            icon="envelope.fill"
+            placeholder="ejemplo@correo.com"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            editable={!loading}
+          />
 
-          {/* Password */}
-          <View style={styles.inputWrapper}>
-            <Text style={[styles.label, isDark && styles.textDarkSecondary]}>Contraseña</Text>
-            <View
-              style={[
-                styles.inputContainer,
-                isDark && styles.inputContainerDark,
-                focusedInput === 'password' && styles.inputFocused
-              ]}
-            >
-              <IconSymbol size={20} name="lock.fill" color={focusedInput === 'password' ? '#FF6B00' : (isDark ? '#666' : '#999')} />
-              <TextInput
-                style={[styles.input, isDark && styles.inputDark]}
-                placeholder="••••••••"
-                placeholderTextColor={isDark ? '#555' : '#aaa'}
-                value={password}
-                onChangeText={setPassword}
-                onFocus={() => setFocusedInput('password')}
-                onBlur={() => setFocusedInput(null)}
-                secureTextEntry={!showPassword}
-                editable={!loading}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <IconSymbol
-                  size={20}
-                  name={showPassword ? 'eye.slash.fill' : 'eye.fill'}
-                  color={isDark ? '#666' : '#999'}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
+          <PremiumInput
+            label="Contraseña"
+            icon="lock.fill"
+            placeholder="••••••••"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            rightIcon={showPassword ? 'eye.slash.fill' : 'eye.fill'}
+            onRightIconPress={() => setShowPassword(!showPassword)}
+            editable={!loading}
+          />
 
-          {/* Botón de Acción */}
-          <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+          {/* Submit Button */}
+          <AnimatedButton
+            title={isRegister ? 'Crear Cuenta' : 'Iniciar Sesión'}
             onPress={handleAuth}
+            variant="primary"
+            size="lg"
+            icon="arrow.right"
+            iconPosition="right"
+            loading={loading}
             disabled={loading}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={loading ? ['#999', '#777'] : ['#FF6B00', '#FF8533']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.submitGradient}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Text style={styles.submitText}>
-                    {isRegister ? 'Crear Cuenta' : 'Iniciar Sesión'}
-                  </Text>
-                  <IconSymbol
-                    size={20}
-                    name="arrow.right"
-                    color="#fff"
-                  />
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+            fullWidth
+            style={{ marginTop: Spacing.sm }}
+          />
 
-          {/* Toggle */}
+          {/* Toggle Mode */}
           <View style={styles.toggleContainer}>
-            <Text style={[styles.toggleText, isDark && styles.textDarkSecondary]}>
+            <Text style={[styles.toggleText, { color: colors.textSecondary }]}>
               {isRegister ? '¿Ya tienes cuenta?' : '¿Nuevo usuario?'}
             </Text>
-            <TouchableOpacity onPress={toggleMode} activeOpacity={0.6}>
+            <Pressable onPress={toggleMode} hitSlop={8}>
               <Text style={styles.toggleLink}>
                 {isRegister ? 'Inicia Sesión' : 'Regístrate'}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </Animated.View>
 
+        {/* Forgot Password */}
         {!isRegister && (
-          <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={[styles.forgotPasswordText, isDark && styles.textDarkSecondary]}>
-              ¿Olvidaste tu contraseña?
-            </Text>
-          </TouchableOpacity>
+          <Animated.View entering={FadeIn.delay(400)}>
+            <Pressable style={styles.forgotPassword} hitSlop={8}>
+              <Text style={[styles.forgotPasswordText, { color: colors.textTertiary }]}>
+                ¿Olvidaste tu contraseña?
+              </Text>
+            </Pressable>
+          </Animated.View>
         )}
 
+        {/* Bottom Spacing */}
+        <View style={{ height: 40 }} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -357,156 +321,96 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  containerDark: {
-    backgroundColor: '#000',
-  },
-  circleDecoration: {
-    position: 'absolute',
-    top: -height * 0.15,
-    right: -width * 0.2,
-    width: width * 0.8,
-    height: width * 0.8,
-    borderRadius: width * 0.4,
-    transform: [{ scaleX: 1.5 }],
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 24,
-    paddingTop: height * 0.1,
+    padding: Spacing.lg,
+    paddingTop: height * 0.08,
   },
+
+  // Decorative Elements
+  decorCircle1: {
+    position: 'absolute',
+    top: -height * 0.1,
+    right: -width * 0.3,
+    width: width * 0.9,
+    height: width * 0.9,
+    borderRadius: width * 0.45,
+  },
+  decorCircle2: {
+    position: 'absolute',
+    top: height * 0.3,
+    left: -width * 0.4,
+    width: width * 0.6,
+    height: width * 0.6,
+    borderRadius: width * 0.3,
+  },
+  decorCircle3: {
+    position: 'absolute',
+    bottom: -height * 0.05,
+    right: -width * 0.2,
+    width: width * 0.5,
+    height: width * 0.5,
+    borderRadius: width * 0.25,
+  },
+
+  // Header
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: Spacing.xxl,
   },
-  iconContainer: {
-    marginBottom: 20,
-    shadowColor: '#FF6B00',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
-    elevation: 8,
+  logoContainer: {
+    marginBottom: Spacing.lg,
+    ...Shadows.primary,
   },
-  iconBackground: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
+  logoBackground: {
+    width: 88,
+    height: 88,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
   appName: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '800',
-    color: '#1a1a1a',
-    marginBottom: 8,
     letterSpacing: -0.5,
+    marginBottom: Spacing.xs,
   },
   appTagline: {
     fontSize: 16,
-    color: '#666',
     fontWeight: '500',
   },
+
+  // Form
   formContainer: {
     width: '100%',
   },
-  cardDark: {
-    // Si quisieramos card style
-  },
-  inputWrapper: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#444',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f7',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    height: 56,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  inputContainerDark: {
-    backgroundColor: '#1c1c1e',
-  },
-  inputFocused: {
-    borderColor: '#FF6B00',
-    backgroundColor: '#fff',
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#000',
-    marginLeft: 12,
-    height: '100%',
-  },
-  inputDark: {
-    color: '#fff',
-    backgroundColor: 'transparent',
-  },
-  submitButton: {
-    marginTop: 12,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#FF6B00',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  submitButtonDisabled: {
-    shadowOpacity: 0.1,
-    opacity: 0.8,
-  },
-  submitGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    gap: 12,
-  },
-  submitText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '700',
-  },
+
+  // Toggle
   toggleContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
-    gap: 8,
+    marginTop: Spacing.xl,
+    gap: Spacing.sm,
   },
   toggleText: {
     fontSize: 15,
-    color: '#666',
   },
   toggleLink: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FF6B00',
+    color: BrandColors.primary,
   },
+
+  // Forgot Password
   forgotPassword: {
-    marginTop: 32,
+    marginTop: Spacing.xxl,
     alignItems: 'center',
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: '#888',
     fontWeight: '500',
-  },
-  textDark: {
-    color: '#fff',
-  },
-  textDarkSecondary: {
-    color: '#999',
   },
 });

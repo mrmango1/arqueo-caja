@@ -1,5 +1,9 @@
+import { EmptyState } from '@/components/ui/empty-state';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { SectionHeader } from '@/components/ui/section-header';
+import { StatCard } from '@/components/ui/stat-card';
 import { db } from '@/config/firebase';
+import { BrandColors, Colors, Gradients, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Caja } from '@/types/caja';
@@ -7,21 +11,25 @@ import { onValue, ref } from 'firebase/database';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
+  View
 } from 'react-native';
+import Animated, { FadeInDown, FadeInRight, FadeInUp } from 'react-native-reanimated';
 
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default function HistorialScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const colors = Colors[isDark ? 'dark' : 'light'];
   const { user } = useAuth();
   const [cajasCerradas, setCajasCerradas] = useState<Caja[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,13 +61,14 @@ export default function HistorialScreen() {
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    // Simular refresh
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
   const stats = useMemo(() => {
     const totalComisiones = cajasCerradas.reduce((sum, c) => sum + (c.totalComisiones || 0), 0);
-    return { totalComisiones, totalArqueos: cajasCerradas.length };
+    const promedioComisiones = cajasCerradas.length > 0 ? totalComisiones / cajasCerradas.length : 0;
+    return { totalComisiones, totalArqueos: cajasCerradas.length, promedioComisiones };
   }, [cajasCerradas]);
 
   const formatDate = (timestamp: number | undefined) => {
@@ -79,141 +88,184 @@ export default function HistorialScreen() {
     });
   };
 
+  const handleCardPress = (cajaId: string | undefined) => {
+    if (!cajaId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({ pathname: '/detalle-caja', params: { id: cajaId } });
+  };
+
   if (loading) {
     return (
-      <View style={[styles.container, styles.centered, isDark && styles.containerDark]}>
-        <ActivityIndicator size="large" color="#FF6B00" />
+      <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={BrandColors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, isDark && styles.containerDark]}>
-      {/* Header unificado */}
-      <View style={[styles.topBar, isDark && styles.topBarDark]}>
-        <Text style={[styles.topBarTitle, isDark && styles.textDark]}>Historial</Text>
-      </View>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <Animated.View
+        entering={FadeInDown.duration(400)}
+        style={[styles.topBar, { backgroundColor: colors.background }]}
+      >
+        <Text style={[styles.topBarTitle, { color: colors.text }]}>Historial</Text>
+      </Animated.View>
 
       <ScrollView
         style={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B00" />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={BrandColors.primary}
+            colors={[BrandColors.primary]}
+          />
+        }
       >
-        {/* Stats cards modernas */}
-        <View style={styles.statsRow}>
-          <View style={[styles.statCard, isDark && styles.cardDark]}>
-            <View style={styles.statContent}>
-              <Text style={styles.statLabel}>Ganancias Totales</Text>
-              <Text style={styles.statValue}>${stats.totalComisiones.toFixed(2)}</Text>
-            </View>
-            <View style={[styles.statIcon, { backgroundColor: '#FF6B0020' }]}>
-              <IconSymbol size={24} name="dollarsign" color="#FF6B00" />
-            </View>
-          </View>
+        {/* Stats Section */}
+        <Animated.View
+          entering={FadeInUp.delay(100).springify()}
+          style={styles.statsRow}
+        >
+          <StatCard
+            title="Ganancias Totales"
+            value={`$${stats.totalComisiones.toFixed(2)}`}
+            icon="dollarsign"
+            iconColor={BrandColors.primary}
+            variant="gradient"
+            gradientColors={Gradients.primary}
+            style={{ flex: 2 }}
+            delay={0}
+          />
+          <StatCard
+            title="Cierres"
+            value={stats.totalArqueos}
+            variant="default"
+            compact
+            style={{ flex: 1 }}
+            delay={100}
+          />
+        </Animated.View>
 
-          <View style={[styles.statCardSmall, isDark && styles.cardDark]}>
-            <Text style={styles.statLabel}>Cierres</Text>
-            <Text style={[styles.statValue, isDark && styles.textDark]}>{stats.totalArqueos}</Text>
-          </View>
-        </View>
+        {/* Promedio Card */}
+        {stats.totalArqueos > 0 && (
+          <Animated.View entering={FadeInUp.delay(200).springify()}>
+            <View style={[styles.avgCard, { backgroundColor: colors.surface }, Shadows.xs]}>
+              <View style={styles.avgCardLeft}>
+                <View style={[styles.avgIcon, { backgroundColor: '#34C75915' }]}>
+                  <IconSymbol size={18} name="chart.line.uptrend.xyaxis" color="#34C759" />
+                </View>
+                <View>
+                  <Text style={[styles.avgLabel, { color: colors.textSecondary }]}>
+                    Promedio por caja
+                  </Text>
+                  <Text style={[styles.avgValue, { color: colors.text }]}>
+                    ${stats.promedioComisiones.toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+              <IconSymbol size={16} name="chevron.right" color={colors.textTertiary} />
+            </View>
+          </Animated.View>
+        )}
 
-        <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
-          Cierres Recientes
-        </Text>
+        <SectionHeader
+          title="Cierres Recientes"
+          style={{ marginTop: Spacing.lg }}
+        />
 
         {cajasCerradas.length === 0 ? (
-          <View style={styles.emptyState}>
-            <View style={[styles.emptyIconBg, isDark && styles.emptyIconBgDark]}>
-              <IconSymbol size={40} name="clock.arrow.circlepath" color={isDark ? '#666' : '#ccc'} />
-            </View>
-            <Text style={[styles.emptyTitle, isDark && styles.textDark]}>
-              Sin historial aún
-            </Text>
-            <Text style={[styles.emptySubtitle, isDark && styles.textDarkSecondary]}>
-              Aquí verás tus cierres de caja detallados
-            </Text>
-          </View>
+          <EmptyState
+            icon="clock.arrow.circlepath"
+            title="Sin historial aún"
+            description="Aquí verás tus cierres de caja detallados"
+            style={{ marginTop: Spacing.xl }}
+          />
         ) : (
-          <FlatList
-            data={cajasCerradas}
-            keyExtractor={(item) => item.id || ''}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled={false}
-            contentContainerStyle={styles.listContainer}
-            ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
-            renderItem={({ item: caja }) => (
-              <TouchableOpacity
-                style={[styles.historyCard, isDark && styles.cardDark]}
-                onPress={() => router.push({ pathname: '/detalle-caja', params: { id: caja.id } })}
-                activeOpacity={0.7}
+          <View style={styles.listContainer}>
+            {cajasCerradas.map((caja, index) => (
+              <Animated.View
+                key={caja.id}
+                entering={FadeInRight.delay(index * 80).springify()}
               >
-                <View style={styles.cardHeader}>
-                  <Text style={[styles.cardDate, isDark && styles.textDark]}>
-                    {formatDate(caja.fechaCierre)}
-                  </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    {(caja.totalComisiones || 0) > 0 && (
-                      <View style={styles.badgeSuccess}>
-                        <Text style={styles.badgeSuccessText}>+${(caja.totalComisiones || 0).toFixed(2)}</Text>
-                      </View>
-                    )}
-                    <IconSymbol size={16} name="chevron.right" color={isDark ? '#666' : '#ccc'} />
-                  </View>
-                </View>
-
-                <View style={[styles.divider, isDark && styles.dividerDark]} />
-
-                <View style={styles.cardStats}>
-                  <View style={styles.statCol}>
-                    <Text style={styles.statColLabel}>Inicial</Text>
-                    <Text style={[styles.statColValue, isDark && styles.textDark]}>
-                      ${caja.montoInicial.toFixed(2)}
+                <AnimatedPressable
+                  style={[styles.historyCard, { backgroundColor: colors.surface }, Shadows.sm]}
+                  onPress={() => handleCardPress(caja.id)}
+                >
+                  <View style={styles.cardHeader}>
+                    <Text style={[styles.cardDate, { color: colors.text }]}>
+                      {formatDate(caja.fechaCierre)}
                     </Text>
-                  </View>
-                  <View style={styles.statCol}>
-                    <Text style={styles.statColLabel}>Entradas</Text>
-                    <Text style={[styles.statColValue, { color: '#34C759' }]}>
-                      +${(caja.totalDepositos || 0).toFixed(2)}
-                    </Text>
-                  </View>
-                  <View style={styles.statCol}>
-                    <Text style={styles.statColLabel}>Salidas</Text>
-                    <Text style={[styles.statColValue, { color: '#FF3B30' }]}>
-                      -${(caja.totalRetiros || 0).toFixed(2)}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={[styles.cardFooter, isDark && styles.cardFooterDark]}>
-                  <View style={styles.footerRow}>
-                    <IconSymbol size={14} name="clock" color="#888" />
-                    <Text style={styles.footerTime}>
-                      {formatTime(caja.fechaApertura)} - {formatTime(caja.fechaCierre)}
-                    </Text>
+                    <View style={styles.cardHeaderRight}>
+                      {(caja.totalComisiones || 0) > 0 && (
+                        <View style={styles.badgeSuccess}>
+                          <Text style={styles.badgeSuccessText}>
+                            +${(caja.totalComisiones || 0).toFixed(2)}
+                          </Text>
+                        </View>
+                      )}
+                      <IconSymbol size={16} name="chevron.right" color={colors.textTertiary} />
+                    </View>
                   </View>
 
-                  {caja.diferencia !== undefined && caja.diferencia !== 0 && (
-                    <View style={styles.footerRow}>
-                      <IconSymbol
-                        size={14}
-                        name="exclamationmark.triangle.fill"
-                        color={(caja.diferencia || 0) > 0 ? '#007AFF' : '#FF3B30'}
-                      />
-                      <Text style={[
-                        styles.diferenciaText,
-                        { color: (caja.diferencia || 0) > 0 ? '#007AFF' : '#FF3B30' }
-                      ]}>
-                        {(caja.diferencia || 0) > 0 ? 'Sobran' : 'Faltan'} ${(Math.abs(caja.diferencia || 0)).toFixed(2)}
+                  <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
+
+                  <View style={styles.cardStats}>
+                    <View style={styles.statCol}>
+                      <Text style={[styles.statColLabel, { color: colors.textTertiary }]}>Inicial</Text>
+                      <Text style={[styles.statColValue, { color: colors.text }]}>
+                        ${caja.montoInicial.toFixed(2)}
                       </Text>
                     </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            )}
-          />
+                    <View style={styles.statCol}>
+                      <Text style={[styles.statColLabel, { color: colors.textTertiary }]}>Entradas</Text>
+                      <Text style={[styles.statColValue, { color: '#34C759' }]}>
+                        +${(caja.totalDepositos || 0).toFixed(2)}
+                      </Text>
+                    </View>
+                    <View style={styles.statCol}>
+                      <Text style={[styles.statColLabel, { color: colors.textTertiary }]}>Salidas</Text>
+                      <Text style={[styles.statColValue, { color: '#FF3B30' }]}>
+                        -${(caja.totalRetiros || 0).toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.cardFooter, { backgroundColor: colors.backgroundTertiary }]}>
+                    <View style={styles.footerRow}>
+                      <IconSymbol size={14} name="clock" color={colors.textTertiary} />
+                      <Text style={[styles.footerTime, { color: colors.textTertiary }]}>
+                        {formatTime(caja.fechaApertura)} - {formatTime(caja.fechaCierre)}
+                      </Text>
+                    </View>
+
+                    {caja.diferencia !== undefined && caja.diferencia !== 0 && (
+                      <View style={styles.footerRow}>
+                        <IconSymbol
+                          size={14}
+                          name="exclamationmark.triangle.fill"
+                          color={(caja.diferencia || 0) > 0 ? '#007AFF' : '#FF3B30'}
+                        />
+                        <Text style={[
+                          styles.diferenciaText,
+                          { color: (caja.diferencia || 0) > 0 ? '#007AFF' : '#FF3B30' }
+                        ]}>
+                          {(caja.diferencia || 0) > 0 ? 'Sobran' : 'Faltan'} ${(Math.abs(caja.diferencia || 0)).toFixed(2)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </AnimatedPressable>
+              </Animated.View>
+            ))}
+          </View>
         )}
-        <View style={{ height: 100 }} />
+
+        {/* Bottom Spacing */}
+        <View style={{ height: 120 }} />
       </ScrollView>
     </View>
   );
@@ -222,10 +274,6 @@ export default function HistorialScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
-  },
-  containerDark: {
-    backgroundColor: '#000',
   },
   centered: {
     justifyContent: 'center',
@@ -233,124 +281,90 @@ const styles = StyleSheet.create({
   },
   topBar: {
     paddingTop: 60,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-    backgroundColor: '#F2F2F7',
+    paddingBottom: Spacing.base,
+    paddingHorizontal: Spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  topBarDark: {
-    backgroundColor: '#000',
   },
   topBarTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#000',
+    letterSpacing: -0.5,
   },
   scrollContent: {
     flex: 1,
   },
   scrollContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: Spacing.lg,
     paddingBottom: 20,
   },
 
   // Stats
   statsRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  statCard: {
-    flex: 2,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  statCardSmall: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardDark: {
-    backgroundColor: '#1c1c1e',
-  },
-  statContent: {
-    gap: 4,
-  },
-  statValue: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#000',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#888',
-    fontWeight: '500',
-  },
-  statIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.base,
   },
 
-  // Section
-  sectionTitle: {
+  // Average Card
+  avgCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.base,
+    borderRadius: Radius.xl,
+  },
+  avgCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  avgIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avgLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  avgValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000',
-    marginBottom: 16,
-    marginLeft: 4,
   },
 
   // List
   listContainer: {
-    gap: 16,
+    gap: Spacing.base,
   },
   historyCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: Radius.xl,
+    padding: Spacing.base,
+    overflow: 'hidden',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.md,
   },
   cardDate: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#000',
     textTransform: 'capitalize',
   },
+  cardHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   badgeSuccess: {
-    backgroundColor: '#34C75915',
+    backgroundColor: 'rgba(52, 199, 89, 0.12)',
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingVertical: 5,
+    borderRadius: Radius.sm,
   },
   badgeSuccessText: {
     color: '#34C759',
@@ -359,16 +373,12 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
-    marginBottom: 12,
-  },
-  dividerDark: {
-    backgroundColor: '#333',
+    marginBottom: Spacing.md,
   },
   cardStats: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: Spacing.md,
   },
   statCol: {
     alignItems: 'center',
@@ -376,28 +386,23 @@ const styles = StyleSheet.create({
   },
   statColLabel: {
     fontSize: 11,
-    color: '#888',
-    marginBottom: 2,
+    fontWeight: '500',
+    marginBottom: 4,
   },
   statColValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: 15,
+    fontWeight: '700',
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    marginHorizontal: -16,
-    marginBottom: -16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-  },
-  cardFooterDark: {
-    backgroundColor: '#252525',
+    marginHorizontal: -Spacing.base,
+    marginBottom: -Spacing.base,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.base,
+    borderBottomLeftRadius: Radius.xl,
+    borderBottomRightRadius: Radius.xl,
   },
   footerRow: {
     flexDirection: 'row',
@@ -406,43 +411,10 @@ const styles = StyleSheet.create({
   },
   footerTime: {
     fontSize: 12,
-    color: '#888',
+    fontWeight: '500',
   },
   diferenciaText: {
     fontSize: 12,
     fontWeight: '600',
   },
-
-  // Empty
-  emptyState: {
-    alignItems: 'center',
-    padding: 40,
-    marginTop: 20,
-  },
-  emptyIconBg: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: '#eee',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  emptyIconBgDark: {
-    backgroundColor: '#333',
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#888',
-    textAlign: 'center',
-  },
-
-  textDark: { color: '#fff' },
-  textDarkSecondary: { color: '#888' },
 });
