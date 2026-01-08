@@ -265,12 +265,11 @@ export default function NuevaOperacionScreen() {
                     options={{
                         title: 'Nueva Operación',
                         headerStyle: { backgroundColor: isDark ? '#1c1c1e' : '#fff' },
-                        headerTintColor: '#FF6B00',
+                        headerTintColor: isDark ? '#fff' : '#000',
                         headerShadowVisible: true,
                         headerLeft: () => (
-                            <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: -8 }}>
-                                <IconSymbol size={28} name="chevron.left" color="#FF6B00" />
-                                <Text style={{ color: '#FF6B00', fontSize: 17, marginLeft: -4 }}>Atrás</Text>
+                            <TouchableOpacity onPress={() => router.back()} style={{ padding: 8, marginLeft: -8 }}>
+                                <Text style={{ color: '#007AFF', fontSize: 17 }}>Cancelar</Text>
                             </TouchableOpacity>
                         ),
                     }}
@@ -358,24 +357,34 @@ export default function NuevaOperacionScreen() {
 
             <Stack.Screen
                 options={{
-                    title: categoriaActual?.nombre || 'Operación',
-                    headerStyle: { backgroundColor: primaryColor },
-                    headerTintColor: '#fff',
-                    headerShadowVisible: false,
+                    title: categoriaActual?.nombre || 'Nueva Operación',
+                    presentation: 'modal',
+                    headerStyle: { backgroundColor: isDark ? '#1c1c1e' : '#fff' },
+                    headerTintColor: isDark ? '#fff' : '#000',
+                    headerShadowVisible: true,
                     headerLeft: () => (
                         <TouchableOpacity
                             onPress={() => {
                                 if (tipoInicial) {
                                     router.back();
                                 } else {
-                                    setCategoriaSeleccionada(null);
+                                    router.back();
                                 }
                             }}
-                            style={{ flexDirection: 'row', alignItems: 'center', marginLeft: -8 }}
+                            style={{ padding: 8, marginLeft: -8 }}
                         >
-                            <IconSymbol size={28} name="chevron.left" color="#fff" />
+                            <Text style={{ color: '#007AFF', fontSize: 17 }}>Cancelar</Text>
                         </TouchableOpacity>
                     ),
+                    headerRight: () => (
+                        <TouchableOpacity
+                            onPress={() => setCategoriaSeleccionada(null)}
+                            disabled={!categoriaSeleccionada}
+                            style={{ padding: 8, marginRight: -8, opacity: categoriaSeleccionada ? 1 : 0 }}
+                        >
+                            <Text style={{ color: isDark ? '#fff' : '#000', fontSize: 17 }}>Limpiar</Text>
+                        </TouchableOpacity>
+                    )
                 }}
             />
 

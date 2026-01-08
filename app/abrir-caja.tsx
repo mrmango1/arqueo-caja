@@ -140,13 +140,13 @@ export default function AbrirCajaScreen() {
       <Stack.Screen
         options={{
           title: 'Abrir Caja',
+          presentation: 'modal',
           headerStyle: { backgroundColor: isDark ? '#1c1c1e' : '#fff' },
-          headerTintColor: '#FF6B00',
+          headerTintColor: isDark ? '#fff' : '#000',
           headerShadowVisible: true,
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: -8 }}>
-              <IconSymbol size={28} name="chevron.left" color="#FF6B00" />
-              <Text style={{ color: '#FF6B00', fontSize: 17, marginLeft: -4 }}>Atrás</Text>
+            <TouchableOpacity onPress={() => router.back()} style={{ padding: 8, marginLeft: -8 }}>
+              <Text style={{ color: '#007AFF', fontSize: 17 }}>Cancelar</Text>
             </TouchableOpacity>
           )
         }}

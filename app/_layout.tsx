@@ -19,10 +19,10 @@ export default function RootLayout() {
             <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="abrir-caja" options={{ headerShown: true, headerBackTitle: '' }} />
-            <Stack.Screen name="nueva-operacion" options={{ headerShown: true, headerBackTitle: '' }} />
+            <Stack.Screen name="abrir-caja" options={{ presentation: 'modal', headerShown: true, headerBackTitle: '' }} />
+            <Stack.Screen name="nueva-operacion" options={{ presentation: 'modal', headerShown: true, headerBackTitle: '' }} />
             <Stack.Screen name="nueva-transaccion" options={{ headerShown: false }} />
-            <Stack.Screen name="cerrar-caja" options={{ headerShown: true, headerBackTitle: '' }} />
+            <Stack.Screen name="cerrar-caja" options={{ presentation: 'modal', headerShown: true, headerBackTitle: '' }} />
             <Stack.Screen name="configurar-comisiones" options={{ headerShown: true, headerBackTitle: '' }} />
             <Stack.Screen name="editar-perfil" options={{ headerShown: true, headerBackTitle: '' }} />
             <Stack.Screen name="detalle-caja" options={{ headerShown: true, headerBackTitle: '' }} />

@@ -12,7 +12,6 @@ export default function TabLayout() {
   return (
     <NativeTabs
       tintColor={BrandColors.primary}
-      iconColor={colors.tabIconDefault}
     >
       <NativeTabs.Trigger name="index">
         <Icon

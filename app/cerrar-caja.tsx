@@ -243,16 +243,16 @@ export default function CerrarCajaScreen() {
     >
       <Stack.Screen options={{
         title: 'Arqueo de Caja',
+        presentation: 'modal',
         headerStyle: { backgroundColor: isDark ? colors.surface : '#fff' },
-        headerTintColor: SemanticColors.error,
-        headerShadowVisible: false,
+        headerTintColor: isDark ? '#fff' : '#000',
+        headerShadowVisible: true,
         headerLeft: () => (
           <TouchableOpacity
             onPress={() => router.back()}
-            style={styles.backButton}
+            style={{ padding: 8, marginLeft: -8 }}
           >
-            <IconSymbol size={28} name="chevron.left" color={SemanticColors.error} />
-            <Text style={styles.backText}>Atrás</Text>
+            <Text style={{ color: '#007AFF', fontSize: 17 }}>Cancelar</Text>
           </TouchableOpacity>
         )
       }} />
