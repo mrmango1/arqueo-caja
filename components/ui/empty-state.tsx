@@ -3,7 +3,7 @@
  */
 
 import { IconSymbol, IconSymbolName } from '@/components/ui/icon-symbol';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { BrandColors, Colors, Radius, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
@@ -25,7 +25,7 @@ interface EmptyStateProps {
 
 export function EmptyState({
     icon,
-    iconColor = '#FF6B00',
+    iconColor = BrandColors.primary,
     title,
     description,
     action,

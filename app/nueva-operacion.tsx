@@ -1,5 +1,6 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { db } from '@/config/firebase';
+import { BrandColors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -236,7 +237,7 @@ export default function NuevaOperacionScreen() {
                                     <IconSymbol
                                         size={20}
                                         name="building.columns"
-                                        color={banco === canal.nombre ? '#FF6B00' : (isDark ? '#666' : '#999')}
+                                        color={banco === canal.nombre ? BrandColors.primary : (isDark ? '#666' : '#999')}
                                     />
                                     <Text style={[
                                         styles.modalItemText,
@@ -247,7 +248,7 @@ export default function NuevaOperacionScreen() {
                                     </Text>
                                 </View>
                                 {banco === canal.nombre && (
-                                    <IconSymbol size={20} name="checkmark.circle.fill" color="#FF6B00" />
+                                    <IconSymbol size={20} name="checkmark.circle.fill" color={BrandColors.primary} />
                                 )}
                             </TouchableOpacity>
                         ))}
@@ -282,10 +283,12 @@ export default function NuevaOperacionScreen() {
                 >
                     {/* Ingresos */}
                     <View style={styles.sectionHeader}>
-                        <View style={[styles.sectionDot, { backgroundColor: '#34C759' }]} />
-                        <Text style={[styles.sectionLabel, isDark && styles.textDark]}>
-                            Ingresos
-                        </Text>
+                        <View style={styles.sectionTitleRow}>
+                            <View style={[styles.sectionDot, { backgroundColor: '#34C759' }]} />
+                            <Text style={[styles.sectionLabel, isDark && styles.textDark]}>
+                                Ingresos
+                            </Text>
+                        </View>
                         <Text style={[styles.sectionSubtitle, isDark && styles.textDarkSecondary]}>
                             Cliente te entrega dinero
                         </Text>
@@ -295,12 +298,23 @@ export default function NuevaOperacionScreen() {
                         {categoriasIngreso.map((cat) => (
                             <TouchableOpacity
                                 key={cat.id}
-                                style={[styles.categoryCard, isDark && styles.cardDark]}
+                                style={[
+                                    styles.categoryCard,
+                                    {
+                                        backgroundColor: isDark ? '#1c1c1e' : '#fff',
+                                        shadowColor: '#000',
+                                        shadowOffset: { width: 0, height: 2 },
+                                        shadowOpacity: 0.10,
+                                        shadowRadius: 2,
+                                        elevation: 4,
+                                    }
+                                ]}
                                 onPress={() => setCategoriaSeleccionada(cat.id)}
                                 activeOpacity={0.7}
                             >
-                                <View style={[styles.categoryIcon, { backgroundColor: `${cat.color}15` }]}>
-                                    <IconSymbol size={26} name={cat.icono} color={cat.color} />
+                                <View style={[StyleSheet.absoluteFill, { backgroundColor: `${cat.color}15`, borderRadius: 16 }]} />
+                                <View style={styles.categoryIcon}>
+                                    <IconSymbol size={28} name={cat.icono} color={cat.color} />
                                 </View>
                                 <Text style={[styles.categoryName, isDark && styles.textDark]}>
                                     {cat.nombreCorto}
@@ -311,10 +325,12 @@ export default function NuevaOperacionScreen() {
 
                     {/* Egresos */}
                     <View style={[styles.sectionHeader, { marginTop: 32 }]}>
-                        <View style={[styles.sectionDot, { backgroundColor: '#FF3B30' }]} />
-                        <Text style={[styles.sectionLabel, isDark && styles.textDark]}>
-                            Egresos
-                        </Text>
+                        <View style={styles.sectionTitleRow}>
+                            <View style={[styles.sectionDot, { backgroundColor: '#FF3B30' }]} />
+                            <Text style={[styles.sectionLabel, isDark && styles.textDark]}>
+                                Egresos
+                            </Text>
+                        </View>
                         <Text style={[styles.sectionSubtitle, isDark && styles.textDarkSecondary]}>
                             Tú entregas dinero al cliente
                         </Text>
@@ -324,12 +340,23 @@ export default function NuevaOperacionScreen() {
                         {categoriasEgreso.map((cat) => (
                             <TouchableOpacity
                                 key={cat.id}
-                                style={[styles.categoryCard, isDark && styles.cardDark]}
+                                style={[
+                                    styles.categoryCard,
+                                    {
+                                        backgroundColor: isDark ? '#1c1c1e' : '#fff',
+                                        shadowColor: '#000',
+                                        shadowOffset: { width: 0, height: 2 },
+                                        shadowOpacity: 0.10,
+                                        shadowRadius: 2,
+                                        elevation: 4,
+                                    }
+                                ]}
                                 onPress={() => setCategoriaSeleccionada(cat.id)}
                                 activeOpacity={0.7}
                             >
-                                <View style={[styles.categoryIcon, { backgroundColor: `${cat.color}15` }]}>
-                                    <IconSymbol size={26} name={cat.icono} color={cat.color} />
+                                <View style={[StyleSheet.absoluteFill, { backgroundColor: `${cat.color}15`, borderRadius: 16 }]} />
+                                <View style={styles.categoryIcon}>
+                                    <IconSymbol size={28} name={cat.icono} color={cat.color} />
                                 </View>
                                 <Text style={[styles.categoryName, isDark && styles.textDark]}>
                                     {cat.nombreCorto}
@@ -344,7 +371,7 @@ export default function NuevaOperacionScreen() {
         );
     }
 
-    const primaryColor = categoriaActual?.color || '#FF6B00';
+    const primaryColor = categoriaActual?.color || BrandColors.primary;
 
     return (
         <KeyboardAvoidingView
@@ -465,7 +492,7 @@ export default function NuevaOperacionScreen() {
                     {/* Comisión */}
                     <View style={styles.formGroup}>
                         <View style={styles.labelRow}>
-                            <IconSymbol size={16} name="dollarsign.circle" color="#FF6B00" />
+                            <IconSymbol size={16} name="dollarsign.circle" color={BrandColors.primary} />
                             <Text style={[styles.formLabel, isDark && styles.textDark]}>
                                 Comisión cobrada
                             </Text>
@@ -559,11 +586,15 @@ const styles = StyleSheet.create({
     sectionHeader: {
         marginBottom: 16,
     },
+    sectionTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
     sectionDot: {
         width: 8,
         height: 8,
         borderRadius: 4,
-        marginBottom: 8,
     },
     sectionLabel: {
         fontSize: 20,
@@ -592,12 +623,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#1c1c1e',
     },
     categoryIcon: {
-        width: 52,
-        height: 52,
-        borderRadius: 16,
+        width: 48,
+        height: 48,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 10,
+        marginBottom: 8,
     },
     categoryName: {
         fontSize: 12,
@@ -665,7 +695,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     requiredBadge: {
-        backgroundColor: '#FF6B0015',
+        backgroundColor: 'rgba(15, 23, 42, 0.1)',
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: 6,
@@ -673,7 +703,7 @@ const styles = StyleSheet.create({
     requiredText: {
         fontSize: 9,
         fontWeight: '700',
-        color: '#FF6B00',
+        color: BrandColors.primary,
     },
     optionalBadge: {
         backgroundColor: '#f0f0f0',
@@ -744,20 +774,20 @@ const styles = StyleSheet.create({
     comisionWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFF8F5',
+        backgroundColor: '#F8FAFC', // Slate 50
         borderRadius: 12,
         paddingHorizontal: 16,
         borderWidth: 1,
-        borderColor: '#FF6B0030',
+        borderColor: 'rgba(15, 23, 42, 0.2)',
     },
     comisionWrapperDark: {
-        backgroundColor: '#2a2015',
-        borderColor: '#FF6B0040',
+        backgroundColor: '#0F172A', // Slate 900
+        borderColor: 'rgba(148, 163, 184, 0.2)',
     },
     comisionCurrency: {
         fontSize: 20,
         fontWeight: '600',
-        color: '#FF6B00',
+        color: BrandColors.primary,
     },
     comisionInput: {
         flex: 1,
@@ -841,7 +871,7 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     modalItemSelected: {
-        backgroundColor: '#FF6B0010',
+        backgroundColor: 'rgba(15, 23, 42, 0.05)',
     },
     modalItemContent: {
         flexDirection: 'row',
@@ -853,7 +883,7 @@ const styles = StyleSheet.create({
         color: '#333',
     },
     modalItemTextSelected: {
-        color: '#FF6B00',
+        color: BrandColors.primary,
         fontWeight: '600',
     },
 

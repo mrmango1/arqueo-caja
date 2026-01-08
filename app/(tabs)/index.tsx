@@ -4,13 +4,12 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { SectionHeader } from '@/components/ui/section-header';
 import { TransactionItem } from '@/components/ui/transaction-item';
 import { db } from '@/config/firebase';
-import { BrandColors, Colors, Gradients, Radius, Shadows, Spacing } from '@/constants/theme';
+import { BrandColors, Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Caja, getCategoriaById, SaldoCanalInicial, Transaccion } from '@/types/caja';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { get, onValue, ref, update } from 'firebase/database';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -312,11 +311,8 @@ export default function HomeScreen() {
       >
         {/* Balance Card - Hero */}
         <Animated.View entering={FadeInUp.delay(100).springify()}>
-          <LinearGradient
-            colors={Gradients.primary}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.balanceCard, Shadows.primary]}
+          <View
+            style={[styles.balanceCard, Shadows.primary, { backgroundColor: BrandColors.primary }]}
           >
             <View style={styles.balanceCardTop}>
               <View>
@@ -396,7 +392,7 @@ export default function HomeScreen() {
                 )}
               </View>
             )}
-          </LinearGradient>
+          </View>
         </Animated.View>
 
         {/* Summary Cards Row */}
@@ -435,7 +431,18 @@ export default function HomeScreen() {
           <ActionGrid actions={quickActions} columns={4} />
 
           <TouchableOpacity
-            style={[styles.moreActionsBtn, { backgroundColor: colors.surface }]}
+            style={[
+              styles.moreActionsBtn,
+              {
+                marginTop: Spacing.lg,
+                backgroundColor: colors.surface,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+                elevation: 4,
+              }
+            ]}
             onPress={() => router.push('/nueva-operacion')}
             activeOpacity={0.7}
           >

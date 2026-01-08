@@ -1,4 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BrandColors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -92,7 +93,7 @@ export default function EditarPerfilScreen() {
     if (loading) {
         return (
             <View style={[styles.container, styles.centered, isDark && styles.containerDark]}>
-                <ActivityIndicator size="large" color="#FF6B00" />
+                <ActivityIndicator size="large" color={BrandColors.primary} />
             </View>
         );
     }
@@ -103,20 +104,20 @@ export default function EditarPerfilScreen() {
             <Stack.Screen options={{
                 title: 'Editar Perfil',
                 headerStyle: { backgroundColor: isDark ? '#000' : '#F2F2F7' },
-                headerTintColor: '#FF6B00',
+                headerTintColor: BrandColors.primary,
                 headerShadowVisible: true,
                 headerLeft: () => (
                     <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: -8 }}>
-                        <IconSymbol size={28} name="chevron.left" color="#FF6B00" />
-                        <Text style={{ color: '#FF6B00', fontSize: 17, marginLeft: -4 }}>Atrás</Text>
+                        <IconSymbol size={28} name="chevron.left" color={BrandColors.primary} />
+                        <Text style={{ color: BrandColors.primary, fontSize: 17, marginLeft: -4 }}>Atrás</Text>
                     </TouchableOpacity>
                 ),
                 headerRight: () => (
                     <TouchableOpacity onPress={handleSave} disabled={saving}>
                         {saving ? (
-                            <ActivityIndicator size="small" color="#FF6B00" />
+                            <ActivityIndicator size="small" color={BrandColors.primary} />
                         ) : (
-                            <Text style={{ fontSize: 17, fontWeight: '600', color: '#FF6B00' }}>Guardar</Text>
+                            <Text style={{ fontSize: 17, fontWeight: '600', color: BrandColors.primary }}>Guardar</Text>
                         )}
                     </TouchableOpacity>
                 )

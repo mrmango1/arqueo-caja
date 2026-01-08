@@ -1,4 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BrandColors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -10,7 +11,6 @@ import {
 import { parseLocalizedFloat } from '@/utils/numbers';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -101,21 +101,16 @@ export default function OnboardingScreen() {
 
     const renderWelcome = () => (
         <View style={styles.stepContainer}>
-            <IconSymbol size={80} name="building.columns.fill" color="#FF6B00" />
+            <IconSymbol size={80} name="building.columns.fill" color={BrandColors.primary} />
             <Text style={[styles.title, isDark && styles.textDark]}>Bienvenido a Mi Negocio</Text>
             <Text style={[styles.description, isDark && styles.textDarkSecondary]}>
                 Estamos encantados de tenerte aquí. Antes de comenzar, configuremos tu negocio para que puedas operar de inmediato.
             </Text>
             <TouchableOpacity style={styles.button} onPress={handleNext}>
-                <LinearGradient
-                    colors={['#FF6B00', '#FF8533']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.gradientButton}
-                >
+                <View style={[styles.gradientButton, { backgroundColor: BrandColors.primary }]}>
                     <Text style={styles.buttonText}>Comenzar</Text>
                     <IconSymbol size={20} name="arrow.right" color="#fff" />
-                </LinearGradient>
+                </View>
             </TouchableOpacity>
         </View>
     );
@@ -139,7 +134,7 @@ export default function OnboardingScreen() {
                             <Switch
                                 value={canal.activo}
                                 onValueChange={() => toggleCanal(canal.id)}
-                                trackColor={{ false: '#767577', true: '#FF6B00' }}
+                                trackColor={{ false: '#767577', true: BrandColors.primary }}
                                 thumbColor={isDark ? '#f4f3f4' : '#fff'}
                             />
                         </View>
@@ -151,15 +146,15 @@ export default function OnboardingScreen() {
                     onPress={handleNext}
                     disabled={canalesActivosCount === 0}
                 >
-                    <LinearGradient
-                        colors={canalesActivosCount > 0 ? ['#FF6B00', '#FF8533'] : ['#999', '#777']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.gradientButton}
+                    <View
+                        style={[
+                            styles.gradientButton,
+                            { backgroundColor: canalesActivosCount > 0 ? BrandColors.primary : '#999' }
+                        ]}
                     >
                         <Text style={styles.buttonText}>Siguiente</Text>
                         <IconSymbol size={20} name="arrow.right" color="#fff" />
-                    </LinearGradient>
+                    </View>
                 </TouchableOpacity>
             </View>
         );
@@ -248,7 +243,7 @@ export default function OnboardingScreen() {
                         </>
                     ) : (
                         <View style={styles.infoContainer}>
-                            <IconSymbol size={32} name="info.circle.fill" color="#FF6B00" />
+                            <IconSymbol size={32} name="info.circle.fill" color={BrandColors.primary} />
                             <View style={styles.infoTextContainer}>
                                 <Text style={[styles.infoText, isDark && styles.textDarkSecondary]}>
                                     El cobro por rangos utilizará la configuración predeterminada:
@@ -274,27 +269,17 @@ export default function OnboardingScreen() {
                 onPress={handleFinish}
                 disabled={loading}
             >
-                <LinearGradient
-                    colors={['#FF6B00', '#FF8533']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.gradientButton}
-                >
+                <View style={[styles.gradientButton, { backgroundColor: BrandColors.primary }]}>
                     <Text style={styles.buttonText}>{loading ? 'Guardando...' : 'Finalizar'}</Text>
                     {!loading && <IconSymbol size={20} name="checkmark.circle.fill" color="#fff" />}
-                </LinearGradient>
+                </View>
             </TouchableOpacity>
         </View>
     );
 
     return (
         <View style={[styles.container, isDark && styles.containerDark]}>
-            <LinearGradient
-                colors={['#FF6B00', '#FF8533', '#f5f5f7']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 0.4 }}
-                style={styles.background}
-            />
+            <View style={[styles.background, { backgroundColor: BrandColors.primary }]} />
 
             <View style={styles.content}>
                 {currentStep === 'welcome' && renderWelcome()}
@@ -447,8 +432,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     optionButtonActive: {
-        borderColor: '#FF6B00',
-        backgroundColor: 'rgba(255, 107, 0, 0.1)',
+        borderColor: BrandColors.primary,
+        backgroundColor: 'rgba(15, 23, 42, 0.1)',
     },
     optionText: {
         fontSize: 14,
@@ -456,7 +441,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     optionTextActive: {
-        color: '#FF6B00',
+        color: BrandColors.primary,
         fontWeight: '700',
     },
     inputGroup: {
@@ -494,7 +479,7 @@ const styles = StyleSheet.create({
     },
     infoContainer: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(255, 107, 0, 0.05)',
+        backgroundColor: 'rgba(15, 23, 42, 0.05)',
         padding: 16,
         borderRadius: 12,
         gap: 12,

@@ -1,4 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BrandColors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -312,8 +313,8 @@ export default function ConfiguracionScreen() {
                   style={styles.channelInfo}
                   onPress={() => router.push(`/configurar-comisiones?canalId=${canal.id}`)}
                 >
-                  <View style={[styles.channelIcon, { backgroundColor: canal.activo ? '#FF6B0015' : '#eee' }]}>
-                    <IconSymbol size={16} name="building.columns" color={canal.activo ? '#FF6B00' : '#999'} />
+                  <View style={[styles.channelIcon, { backgroundColor: canal.activo ? 'rgba(15, 23, 42, 0.1)' : '#eee' }]}>
+                    <IconSymbol size={16} name="building.columns" color={canal.activo ? BrandColors.primary : '#999'} />
                   </View>
                   <View>
                     <Text style={[styles.channelName, isDark && styles.textDark, !canal.activo && styles.textDisabled]}>
@@ -327,8 +328,8 @@ export default function ConfiguracionScreen() {
                 <Switch
                   value={canal.activo}
                   onValueChange={() => handleToggleCanal(canal.id)}
-                  trackColor={{ false: '#e0e0e0', true: '#FF6B0050' }}
-                  thumbColor={canal.activo ? '#FF6B00' : '#f4f3f4'}
+                  trackColor={{ false: '#e0e0e0', true: BrandColors.primary }}
+                  thumbColor={isDark ? '#f4f3f4' : '#fff'}
                 />
               </View>
             </View>
@@ -340,27 +341,27 @@ export default function ConfiguracionScreen() {
         <View style={[styles.card, isDark && styles.cardDark]}>
           <View style={styles.channelRow}>
             <View style={[styles.channelInfo, { gap: 12 }]}>
-              <IconSymbol size={20} name="bell.fill" color="#FF9500" />
+              <IconSymbol size={20} name="bell.fill" color={BrandColors.primary} />
               <Text style={[styles.menuTitle, isDark && styles.textDark]}>Notificaciones</Text>
             </View>
             <Switch
               value={config.notificacionesPush}
               onValueChange={(v) => updateToggle('notificacionesPush', v)}
-              trackColor={{ false: '#e0e0e0', true: '#FF6B0050' }}
-              thumbColor={config.notificacionesPush ? '#FF6B00' : '#f4f3f4'}
+              trackColor={{ false: '#e0e0e0', true: BrandColors.primary }}
+              thumbColor={isDark ? '#f4f3f4' : '#fff'}
             />
           </View>
           <View style={[styles.divider, isDark && styles.dividerDark]} />
           <View style={styles.channelRow}>
             <View style={[styles.channelInfo, { gap: 12 }]}>
-              <IconSymbol size={20} name="speaker.wave.2.fill" color="#5856D6" />
+              <IconSymbol size={20} name="speaker.wave.2.fill" color={BrandColors.primary} />
               <Text style={[styles.menuTitle, isDark && styles.textDark]}>Sonidos</Text>
             </View>
             <Switch
               value={config.sonidoOperaciones}
               onValueChange={(v) => updateToggle('sonidoOperaciones', v)}
-              trackColor={{ false: '#e0e0e0', true: '#5856D650' }}
-              thumbColor={config.sonidoOperaciones ? '#5856D6' : '#f4f3f4'}
+              trackColor={{ false: '#e0e0e0', true: BrandColors.primary }}
+              thumbColor={isDark ? '#f4f3f4' : '#fff'}
             />
           </View>
         </View>
@@ -369,8 +370,8 @@ export default function ConfiguracionScreen() {
         <Text style={[styles.sectionTitle, isDark && styles.textDark]}>Soporte</Text>
         <View style={[styles.card, isDark && styles.cardDark]}>
           <TouchableOpacity style={styles.menuItem} onPress={() => Linking.openURL('mailto:soporte@minegocio.com')}>
-            <View style={[styles.menuIcon, { backgroundColor: '#FF6B0015' }]}>
-              <IconSymbol size={18} name="envelope.fill" color="#FF6B00" />
+            <View style={[styles.menuIcon, { backgroundColor: 'rgba(15, 23, 42, 0.1)' }]}>
+              <IconSymbol size={18} name="envelope.fill" color={BrandColors.primary} />
             </View>
             <Text style={[styles.menuTitle, isDark && styles.textDark]}>Contactar Soporte</Text>
           </TouchableOpacity>
@@ -450,7 +451,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FF6B00',
+    color: BrandColors.primary,
   },
   profileInfo: {
     flex: 1,
@@ -496,7 +497,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   actionText: {
-    color: '#FF6B00',
+    color: BrandColors.primary,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -677,7 +678,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
   },
   modalBtnConfirm: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: BrandColors.primary,
   },
   modalBtnTextCancel: {
     color: '#000',

@@ -1,14 +1,13 @@
 import { AnimatedButton } from '@/components/ui/animated-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { db } from '@/config/firebase';
-import { BrandColors, Colors, Gradients, Radius, SemanticColors, Shadows, Spacing } from '@/constants/theme';
+import { BrandColors, Colors, Radius, SemanticColors, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Caja, SaldoCanalInicial, Transaccion } from '@/types/caja';
 import { isValidNumber, parseLocalizedFloat } from '@/utils/numbers';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
 import { get, onValue, ref, update } from 'firebase/database';
 import React, { useEffect, useState } from 'react';
@@ -265,11 +264,8 @@ export default function CerrarCajaScreen() {
       >
         {/* Summary Card */}
         <Animated.View entering={FadeInUp.delay(100).springify()}>
-          <LinearGradient
-            colors={Gradients.sunset}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.summaryCard, Shadows.lg]}
+          <View
+            style={[styles.summaryCard, Shadows.lg, { backgroundColor: BrandColors.primary }]}
           >
             <View style={styles.summaryHeader}>
               <View>
@@ -311,7 +307,7 @@ export default function CerrarCajaScreen() {
                 <Text style={styles.statLabel}>Tu ganancia</Text>
               </View>
             </View>
-          </LinearGradient>
+          </View>
         </Animated.View>
 
         {/* Channel Balances */}

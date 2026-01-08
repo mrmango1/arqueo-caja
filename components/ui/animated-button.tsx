@@ -3,10 +3,9 @@
  */
 
 import { IconSymbol, IconSymbolName } from '@/components/ui/icon-symbol';
-import { Animation, BrandColors, Colors, Gradients, Radius, Shadows, Spacing } from '@/constants/theme';
+import { Animation, BrandColors, Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { ActivityIndicator, Pressable, Text, TextStyle, ViewStyle } from 'react-native';
 import Animated, {
@@ -110,8 +109,6 @@ export function AnimatedButton({
         container: ViewStyle;
         text: TextStyle;
         iconColor: string;
-        useGradient: boolean;
-        gradientColors?: readonly [string, string];
     } => {
         switch (variant) {
             case 'secondary':
@@ -119,7 +116,6 @@ export function AnimatedButton({
                     container: { backgroundColor: colors.inputBackground },
                     text: { color: colors.text },
                     iconColor: colors.text,
-                    useGradient: false,
                 };
             case 'outline':
                 return {
@@ -130,38 +126,30 @@ export function AnimatedButton({
                     },
                     text: { color: BrandColors.primary },
                     iconColor: BrandColors.primary,
-                    useGradient: false,
                 };
             case 'ghost':
                 return {
                     container: { backgroundColor: 'transparent' },
                     text: { color: BrandColors.primary },
                     iconColor: BrandColors.primary,
-                    useGradient: false,
                 };
             case 'danger':
                 return {
-                    container: {},
+                    container: { backgroundColor: '#EF4444' }, // Red 500
                     text: { color: '#FFFFFF' },
                     iconColor: '#FFFFFF',
-                    useGradient: true,
-                    gradientColors: Gradients.error,
                 };
             case 'success':
                 return {
-                    container: {},
+                    container: { backgroundColor: '#10B981' }, // Emerald 500
                     text: { color: '#FFFFFF' },
                     iconColor: '#FFFFFF',
-                    useGradient: true,
-                    gradientColors: Gradients.success,
                 };
             default:
                 return {
-                    container: {},
+                    container: { backgroundColor: BrandColors.primary },
                     text: { color: '#FFFFFF' },
                     iconColor: '#FFFFFF',
-                    useGradient: true,
-                    gradientColors: Gradients.primary,
                 };
         }
     };
@@ -210,40 +198,19 @@ export function AnimatedButton({
         </>
     );
 
-    if (variantStyles.useGradient) {
-        return (
-            <AnimatedPressable
-                onPress={handlePress}
-                onPressIn={handlePressIn}
-                onPressOut={handlePressOut}
-                disabled={disabled || loading}
-                style={[
-                    animatedStyle,
-                    { borderRadius: Radius.lg, overflow: 'hidden' },
-                    variant === 'primary' && Shadows.primary,
-                    variant === 'success' && Shadows.success,
-                    variant === 'danger' && Shadows.error,
-                ]}
-            >
-                <LinearGradient
-                    colors={variantStyles.gradientColors as [string, string]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={containerStyle}
-                >
-                    {buttonContent}
-                </LinearGradient>
-            </AnimatedPressable>
-        );
-    }
-
     return (
         <AnimatedPressable
             onPress={handlePress}
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
             disabled={disabled || loading}
-            style={[containerStyle, animatedStyle]}
+            style={[
+                containerStyle,
+                animatedStyle,
+                variant === 'primary' && Shadows.primary,
+                variant === 'success' && Shadows.success,
+                variant === 'danger' && Shadows.error,
+            ]}
         >
             {buttonContent}
         </AnimatedPressable>

@@ -1,5 +1,6 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { db } from '@/config/firebase';
+import { BrandColors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -203,8 +204,8 @@ export default function AbrirCajaScreen() {
               {index > 0 && <View style={[styles.divider, isDark && styles.dividerDark]} />}
               <View style={styles.canalInputRow}>
                 <View style={styles.canalInfo}>
-                  <View style={[styles.canalIcon, { backgroundColor: '#FF6B0015' }]}>
-                    <IconSymbol size={16} name="building.columns" color="#FF6B00" />
+                  <View style={[styles.canalIcon, { backgroundColor: 'rgba(15, 23, 42, 0.1)' }]}>
+                    <IconSymbol size={16} name="building.columns" color={BrandColors.primary} />
                   </View>
                   <Text style={[styles.canalName, isDark && styles.textDark]} numberOfLines={1}>
                     {canal.nombre}
@@ -263,7 +264,7 @@ export default function AbrirCajaScreen() {
 
         {/* Info card */}
         <View style={[styles.infoCard, isDark && styles.infoCardDark]}>
-          <IconSymbol size={18} name="info.circle.fill" color="#FF6B00" />
+          <IconSymbol size={18} name="info.circle.fill" color={BrandColors.primary} />
           <Text style={[styles.infoText, isDark && styles.textDarkSecondary]}>
             Cuenta físicamente todo el dinero antes de iniciar. Este monto será tu referencia para el arqueo.
           </Text>
@@ -349,19 +350,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#FF6B00',
+    borderColor: BrandColors.primary,
     borderRadius: 16,
     paddingHorizontal: 20,
     backgroundColor: '#fff',
   },
   amountInputWrapperDark: {
     backgroundColor: '#2c2c2e',
-    borderColor: '#FF6B00',
+    borderColor: BrandColors.primary,
   },
   currencySymbol: {
     fontSize: 36,
     fontWeight: '300',
-    color: '#FF6B00',
+    color: BrandColors.primary,
   },
   amountInput: {
     flex: 1,
@@ -482,7 +483,7 @@ const styles = StyleSheet.create({
   canalCurrency: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FF6B00',
+    color: BrandColors.primary,
   },
   canalInput: {
     flex: 1,
@@ -498,7 +499,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#FF6B0008',
+    backgroundColor: 'rgba(15, 23, 42, 0.05)',
   },
   totalLabel: {
     fontSize: 14,
@@ -508,7 +509,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FF6B00',
+    color: BrandColors.primary,
   },
   divider: {
     height: 1,
@@ -567,17 +568,17 @@ const styles = StyleSheet.create({
   infoCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFF8F5',
+    backgroundColor: '#F8FAFC', // Slate 50
     borderRadius: 14,
     padding: 16,
     marginBottom: 20,
     gap: 12,
     borderWidth: 1,
-    borderColor: '#FF6B0015',
+    borderColor: 'rgba(15, 23, 42, 0.1)',
   },
   infoCardDark: {
-    backgroundColor: '#1a1512',
-    borderColor: '#FF6B0030',
+    backgroundColor: '#0F172A', // Slate 900
+    borderColor: 'rgba(148, 163, 184, 0.2)',
   },
   infoText: {
     flex: 1,
@@ -588,7 +589,7 @@ const styles = StyleSheet.create({
 
   // Submit button
   submitButton: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: BrandColors.primary,
     borderRadius: 16,
     paddingVertical: 18,
     flexDirection: 'row',

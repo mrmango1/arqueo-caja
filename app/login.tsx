@@ -2,11 +2,10 @@ import { AnimatedButton } from '@/components/ui/animated-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PremiumInput } from '@/components/ui/premium-input';
 import { auth } from '@/config/firebase';
-import { Animation, BrandColors, Colors, Gradients, Shadows, Spacing } from '@/constants/theme';
+import { Animation, BrandColors, Colors, Shadows, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import React, { useState } from 'react';
@@ -170,28 +169,6 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      {/* Background Decorations */}
-      <View style={StyleSheet.absoluteFill}>
-        <LinearGradient
-          colors={isDark ? ['#0A0A0A', '#1A1A1A', '#000'] : ['#FFF5EB', '#FFFFFF', '#FFF']}
-          locations={[0, 0.5, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-        {/* Decorative circles */}
-        <View style={[
-          styles.decorCircle1,
-          { backgroundColor: isDark ? 'rgba(255,107,0,0.08)' : 'rgba(255,107,0,0.1)' }
-        ]} />
-        <View style={[
-          styles.decorCircle2,
-          { backgroundColor: isDark ? 'rgba(255,150,0,0.05)' : 'rgba(255,107,0,0.06)' }
-        ]} />
-        <View style={[
-          styles.decorCircle3,
-          { backgroundColor: isDark ? 'rgba(255,107,0,0.03)' : 'rgba(255,107,0,0.04)' }
-        ]} />
-      </View>
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -203,12 +180,14 @@ export default function LoginScreen() {
           style={styles.headerContainer}
         >
           <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
-            <LinearGradient
-              colors={Gradients.primary}
-              style={styles.logoBackground}
+            <View
+              style={[
+                styles.logoBackground,
+                { backgroundColor: BrandColors.primary }
+              ]}
             >
               <IconSymbol size={44} name="building.columns.fill" color="#fff" />
-            </LinearGradient>
+            </View>
           </Animated.View>
           <Text style={[styles.appName, { color: colors.text }]}>Mi Negocio</Text>
           <Text style={[styles.appTagline, { color: colors.textSecondary }]}>
@@ -327,32 +306,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: Spacing.lg,
     paddingTop: height * 0.08,
-  },
-
-  // Decorative Elements
-  decorCircle1: {
-    position: 'absolute',
-    top: -height * 0.1,
-    right: -width * 0.3,
-    width: width * 0.9,
-    height: width * 0.9,
-    borderRadius: width * 0.45,
-  },
-  decorCircle2: {
-    position: 'absolute',
-    top: height * 0.3,
-    left: -width * 0.4,
-    width: width * 0.6,
-    height: width * 0.6,
-    borderRadius: width * 0.3,
-  },
-  decorCircle3: {
-    position: 'absolute',
-    bottom: -height * 0.05,
-    right: -width * 0.2,
-    width: width * 0.5,
-    height: width * 0.5,
-    borderRadius: width * 0.25,
   },
 
   // Header

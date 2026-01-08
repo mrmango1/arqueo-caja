@@ -3,9 +3,8 @@
  */
 
 import { IconSymbol, IconSymbolName } from '@/components/ui/icon-symbol';
-import { Animation, BrandColors, Colors, Gradients, Radius, Shadows, Spacing } from '@/constants/theme';
+import { Animation, BrandColors, Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import Animated, {
@@ -45,7 +44,7 @@ export function StatCard({
     iconBackground,
     trend,
     variant = 'default',
-    gradientColors = Gradients.primary,
+    gradientColors, // Ignored now
     onPress,
     style,
     delay = 0,
@@ -83,9 +82,9 @@ export function StatCard({
                 ? 'arrow.down.right'
                 : 'minus';
         const trendColor = trend.direction === 'up'
-            ? '#34C759'
+            ? '#10B981' // Emerald 500
             : trend.direction === 'down'
-                ? '#FF3B30'
+                ? '#EF4444' // Red 500
                 : colors.textTertiary;
 
         return (
@@ -109,6 +108,10 @@ export function StatCard({
         ...(variant === 'default' && {
             backgroundColor: colors.surface,
             ...Shadows.sm,
+        }),
+        ...(variant === 'gradient' && {
+            backgroundColor: BrandColors.primary, // Solid primary color
+            ...Shadows.primary,
         }),
         ...(style as object),
     };
@@ -176,32 +179,6 @@ export function StatCard({
     if (style?.width !== undefined) outerStyle.width = style.width;
     if (style?.minWidth !== undefined) outerStyle.minWidth = style.minWidth;
     if (style?.maxWidth !== undefined) outerStyle.maxWidth = style.maxWidth;
-
-    if (variant === 'gradient') {
-        return (
-            <Animated.View
-                entering={FadeInDown.delay(delay).springify()}
-                style={[animatedStyle, outerStyle]}
-            >
-                <AnimatedPressable
-                    onPress={onPress}
-                    onPressIn={handlePressIn}
-                    onPressOut={handlePressOut}
-                    disabled={!onPress}
-                    style={{ flex: 1 }}
-                >
-                    <LinearGradient
-                        colors={gradientColors as [string, string]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={[containerStyles, Shadows.primary, { flex: 1 }]}
-                    >
-                        {content}
-                    </LinearGradient>
-                </AnimatedPressable>
-            </Animated.View>
-        );
-    }
 
     return (
         <Animated.View

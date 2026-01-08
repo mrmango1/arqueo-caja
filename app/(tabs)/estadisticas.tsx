@@ -1,5 +1,6 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { db } from '@/config/firebase';
+import { BrandColors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Caja, Transaccion, getCategoriaById } from '@/types/caja';
@@ -114,7 +115,7 @@ export default function EstadisticasScreen() {
             const cat = t.categoria || 'otro';
             categorias[cat] = (categorias[cat] || 0) + 1;
         });
-        const colors = ['#FF6B00', '#34C759', '#FF3B30', '#007AFF', '#5856D6', '#FF9500', '#00C7BE'];
+        const colors = [BrandColors.primary, '#34C759', '#FF3B30', '#007AFF', '#5856D6', '#64748B', '#00C7BE'];
         return Object.entries(categorias).slice(0, 5).map(([key, value], index) => {
             const categoria = getCategoriaById(key as any);
             return {
@@ -149,17 +150,17 @@ export default function EstadisticasScreen() {
         backgroundGradientFrom: isDark ? '#1c1c1e' : '#ffffff',
         backgroundGradientTo: isDark ? '#1c1c1e' : '#ffffff',
         decimalPlaces: 0,
-        color: (opacity = 1) => `rgba(255, 107, 0, ${opacity})`,
+        color: (opacity = 1) => `rgba(15, 23, 42, ${opacity})`, // Slate 900
         labelColor: (opacity = 1) => isDark ? `rgba(255, 255, 255, ${opacity})` : `rgba(102, 102, 102, ${opacity})`,
-        propsForDots: { r: '4', strokeWidth: '0', stroke: '#FF6B00' },
-        fillShadowGradient: '#FF6B00',
+        propsForDots: { r: '4', strokeWidth: '0', stroke: BrandColors.primary },
+        fillShadowGradient: BrandColors.primary,
         fillShadowGradientOpacity: 0.2,
     };
 
     if (loading) {
         return (
             <View style={[styles.container, styles.centered, isDark && styles.containerDark]}>
-                <ActivityIndicator size="large" color="#FF6B00" />
+                <ActivityIndicator size="large" color={BrandColors.primary} />
             </View>
         );
     }
@@ -175,7 +176,7 @@ export default function EstadisticasScreen() {
                 style={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContainer}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B00" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BrandColors.primary} />}
             >
                 {/* KPIs Grid */}
                 <View style={styles.kpiGrid}>
@@ -184,8 +185,8 @@ export default function EstadisticasScreen() {
                             <Text style={styles.kpiLabel}>Ganancias Totales</Text>
                             <Text style={styles.kpiValueMain}>${stats.totalComisiones.toFixed(0)}</Text>
                         </View>
-                        <View style={[styles.kpiIcon, { backgroundColor: '#FF6B0020' }]}>
-                            <IconSymbol size={24} name="dollarsign" color="#FF6B00" />
+                        <View style={[styles.kpiIcon, { backgroundColor: 'rgba(15, 23, 42, 0.1)' }]}>
+                            <IconSymbol size={24} name="dollarsign" color={BrandColors.primary} />
                         </View>
                     </View>
 
@@ -381,7 +382,7 @@ const styles = StyleSheet.create({
     kpiValueMain: {
         fontSize: 32,
         fontWeight: '800',
-        color: '#FF6B00',
+        color: BrandColors.primary,
     },
     kpiIcon: {
         width: 50,
@@ -476,16 +477,16 @@ const styles = StyleSheet.create({
 
     // Insight
     insightCard: {
-        backgroundColor: '#FFF8F5',
+        backgroundColor: '#F8FAFC', // Slate 50
         borderRadius: 20,
         padding: 20,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: '#FF6B0015',
+        borderColor: 'rgba(15, 23, 42, 0.1)',
     },
     insightCardDark: {
-        backgroundColor: '#1a1512',
-        borderColor: '#FF6B0030',
+        backgroundColor: '#0F172A', // Slate 900
+        borderColor: 'rgba(148, 163, 184, 0.2)',
     },
     insightHeader: {
         flexDirection: 'row',

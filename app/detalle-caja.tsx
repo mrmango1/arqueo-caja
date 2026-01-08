@@ -1,5 +1,6 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { db } from '@/config/firebase';
+import { BrandColors, SemanticColors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Caja, Transaccion, getCategoriaById } from '@/types/caja';
@@ -83,7 +84,7 @@ export default function DetalleCajaScreen() {
     if (loading) {
         return (
             <View style={[styles.container, styles.centered, isDark && styles.containerDark]}>
-                <ActivityIndicator size="large" color="#FF6B00" />
+                <ActivityIndicator size="large" color={BrandColors.primary} />
             </View>
         );
     }
@@ -135,11 +136,11 @@ export default function DetalleCajaScreen() {
                             <IconSymbol
                                 size={16}
                                 name={caja.diferencia > 0 ? "arrow.up.circle.fill" : "exclamationmark.triangle.fill"}
-                                color={caja.diferencia > 0 ? '#007AFF' : '#FF3B30'}
+                                color={caja.diferencia > 0 ? SemanticColors.info : SemanticColors.error}
                             />
                             <Text style={[
                                 styles.diffText,
-                                { color: caja.diferencia > 0 ? '#007AFF' : '#FF3B30' }
+                                { color: caja.diferencia > 0 ? SemanticColors.info : SemanticColors.error }
                             ]}>
                                 {caja.diferencia > 0 ? 'Sobrante: ' : 'Faltante: '}
                                 ${Math.abs(caja.diferencia).toFixed(2)}
@@ -181,11 +182,11 @@ export default function DetalleCajaScreen() {
                         </View>
 
                         <View style={styles.balanceItem}>
-                            <View style={[styles.iconBg, { backgroundColor: '#FF6B0015' }]}>
-                                <IconSymbol size={20} name="dollarsign" color="#FF6B00" />
+                            <View style={[styles.iconBg, { backgroundColor: 'rgba(15, 23, 42, 0.1)' }]}>
+                                <IconSymbol size={20} name="dollarsign" color={BrandColors.primary} />
                             </View>
                             <Text style={styles.balanceLabel}>Ganancia</Text>
-                            <Text style={[styles.balanceValue, { color: '#FF6B00' }]}>
+                            <Text style={[styles.balanceValue, { color: BrandColors.primary }]}>
                                 +${(caja.totalComisiones || 0).toFixed(2)}
                             </Text>
                         </View>
@@ -328,10 +329,10 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     diffPositive: {
-        backgroundColor: '#007AFF15',
+        backgroundColor: 'rgba(14, 165, 233, 0.1)',
     },
     diffNegative: {
-        backgroundColor: '#FF3B3015',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
     },
     diffText: {
         fontWeight: '600',

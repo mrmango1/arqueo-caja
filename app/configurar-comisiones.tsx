@@ -1,4 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BrandColors } from '@/constants/theme';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
@@ -258,12 +259,12 @@ export default function ConfigurarComisionesScreen() {
                 options={{
                     title: isEditingDefault ? 'Comisiones por Defecto' : (canal?.nombre || 'Comisiones'),
                     headerStyle: { backgroundColor: isDark ? '#1c1c1e' : '#fff' },
-                    headerTintColor: '#FF6B00',
+                    headerTintColor: BrandColors.primary,
                     headerShadowVisible: true,
                     headerBackTitle: 'Atrás',
                     headerRight: () => hasChanges ? (
                         <TouchableOpacity onPress={handleSave}>
-                            <Text style={{ color: '#FF6B00', fontSize: 17, fontWeight: '600' }}>Guardar</Text>
+                            <Text style={{ color: BrandColors.primary, fontSize: 17, fontWeight: '600' }}>Guardar</Text>
                         </TouchableOpacity>
                     ) : null,
                 }}
@@ -484,7 +485,7 @@ export default function ConfigurarComisionesScreen() {
                                         onPress={() => setShowAddModal(true)}
                                         activeOpacity={0.7}
                                     >
-                                        <IconSymbol size={18} name="plus.circle.fill" color="#FF6B00" />
+                                        <IconSymbol size={18} name="plus.circle.fill" color={BrandColors.primary} />
                                         <Text style={styles.addRangoBtnText}>Agregar nuevo rango</Text>
                                     </TouchableOpacity>
                                 </View>
@@ -588,7 +589,7 @@ const styles = StyleSheet.create({
         gap: 14,
     },
     modoOptionActive: {
-        backgroundColor: '#FF6B0008',
+        backgroundColor: 'rgba(15, 23, 42, 0.05)',
     },
     modoRadio: {
         width: 22,
@@ -600,13 +601,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     modoRadioActive: {
-        borderColor: '#FF6B00',
+        borderColor: BrandColors.primary,
     },
     modoRadioDot: {
         width: 12,
         height: 12,
         borderRadius: 6,
-        backgroundColor: '#FF6B00',
+        backgroundColor: BrandColors.primary,
     },
     modoContent: {
         flex: 1,
@@ -671,7 +672,7 @@ const styles = StyleSheet.create({
     simpleCurrency: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#FF6B00',
+        color: BrandColors.primary,
     },
     simpleInput: {
         fontSize: 18,
@@ -742,7 +743,7 @@ const styles = StyleSheet.create({
     },
     cellCurrency: {
         fontSize: 12,
-        color: '#FF6B00',
+        color: BrandColors.primary,
         fontWeight: '600',
     },
     cellInput: {
@@ -769,24 +770,24 @@ const styles = StyleSheet.create({
     addRangoBtnText: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#FF6B00',
+        color: BrandColors.primary,
     },
 
     // Info
     infoCard: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        backgroundColor: '#F0F8FF',
+        backgroundColor: '#F8FAFC', // Slate 50
         borderRadius: 14,
         padding: 16,
         gap: 12,
         borderWidth: 1,
-        borderColor: '#007AFF15',
+        borderColor: 'rgba(15, 23, 42, 0.1)',
         marginBottom: 16,
     },
     infoCardDark: {
-        backgroundColor: '#0a1520',
-        borderColor: '#007AFF30',
+        backgroundColor: '#0F172A', // Slate 900
+        borderColor: 'rgba(148, 163, 184, 0.2)',
     },
     infoText: {
         flex: 1,
@@ -860,7 +861,7 @@ const styles = StyleSheet.create({
     modalCurrency: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#FF6B00',
+        color: BrandColors.primary,
     },
     modalInput: {
         flex: 1,
@@ -885,7 +886,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f0f0f0',
     },
     modalBtnConfirm: {
-        backgroundColor: '#FF6B00',
+        backgroundColor: BrandColors.primary,
     },
     modalBtnCancelText: {
         fontSize: 16,

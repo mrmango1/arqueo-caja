@@ -5,117 +5,117 @@
 
 import { Platform } from 'react-native';
 
-// Primary Brand Colors - Orange gradient palette
+// Primary Brand Colors - Professional Deep Slate/Navy
 export const BrandColors = {
-  primary: '#FF6B00',
-  primaryLight: '#FF8E33',
-  primaryDark: '#E55A00',
-  secondary: '#FF9500',
-  accent: '#FFB74D',
+  primary: '#0F172A', // Slate 900
+  primaryLight: '#334155', // Slate 700
+  primaryDark: '#020617', // Slate 950
+  secondary: '#475569', // Slate 600
+  accent: '#0EA5E9', // Sky 500 (Subtle accent)
 } as const;
 
 // Semantic Colors - System-wide
 export const SemanticColors = {
-  success: '#34C759',
-  successLight: '#E8F8ED',
-  warning: '#FF9500',
-  warningLight: '#FFF5E6',
-  error: '#FF3B30',
-  errorLight: '#FFEBEA',
-  info: '#007AFF',
-  infoLight: '#E6F2FF',
+  success: '#10B981', // Emerald 500
+  successLight: '#D1FAE5',
+  warning: '#F59E0B', // Amber 500
+  warningLight: '#FEF3C7',
+  error: '#EF4444', // Red 500
+  errorLight: '#FEE2E2',
+  info: '#3B82F6', // Blue 500
+  infoLight: '#DBEAFE',
 } as const;
 
-// Premium Color Palette
+// Professional Color Palette
 export const Colors = {
   light: {
-    // Backgrounds
-    background: '#F5F5F7',
+    // Backgrounds - Clean & Professional
+    background: '#F8FAFC', // Slate 50
     backgroundSecondary: '#FFFFFF',
-    backgroundTertiary: '#F0F0F5',
+    backgroundTertiary: '#F1F5F9', // Slate 100
 
     // Surface colors for cards
     surface: '#FFFFFF',
     surfaceElevated: '#FFFFFF',
-    surfacePressed: '#F5F5F7',
+    surfacePressed: '#F1F5F9',
 
-    // Text hierarchy
-    text: '#1A1A1A',
-    textSecondary: '#6B6B6B',
-    textTertiary: '#8E8E93',
-    textQuaternary: '#AEAEB2',
+    // Text hierarchy - High Contrast
+    text: '#0F172A', // Slate 900
+    textSecondary: '#475569', // Slate 600
+    textTertiary: '#64748B', // Slate 500
+    textQuaternary: '#94A3B8', // Slate 400
 
     // Borders & Dividers
-    border: '#E5E5EA',
-    borderLight: '#F0F0F5',
-    divider: '#E5E5EA',
+    border: '#E2E8F0', // Slate 200
+    borderLight: '#F1F5F9',
+    divider: '#E2E8F0',
 
-    // Glassmorphism
-    glass: 'rgba(255, 255, 255, 0.72)',
-    glassStrong: 'rgba(255, 255, 255, 0.88)',
-    glassBorder: 'rgba(255, 255, 255, 0.18)',
+    // Glassmorphism - Reduced for professional look, now just subtle transparency
+    glass: 'rgba(255, 255, 255, 0.9)',
+    glassStrong: 'rgba(255, 255, 255, 0.95)',
+    glassBorder: 'rgba(226, 232, 240, 0.8)',
 
     // Tab Bar
-    tabBar: 'rgba(249, 249, 249, 0.94)',
-    tabBarBorder: 'rgba(0, 0, 0, 0.04)',
-    tabIconDefault: '#8E8E93',
+    tabBar: '#FFFFFF',
+    tabBarBorder: '#E2E8F0',
+    tabIconDefault: '#64748B',
     tabIconSelected: BrandColors.primary,
 
     // Overlay
-    overlay: 'rgba(0, 0, 0, 0.4)',
-    overlayLight: 'rgba(0, 0, 0, 0.15)',
+    overlay: 'rgba(15, 23, 42, 0.4)',
+    overlayLight: 'rgba(15, 23, 42, 0.1)',
 
     // Shadows
-    shadowColor: '#000000',
-    shadowColorSoft: 'rgba(0, 0, 0, 0.08)',
+    shadowColor: '#0F172A',
+    shadowColorSoft: 'rgba(15, 23, 42, 0.05)',
 
     // Status bar
     statusBar: 'dark',
 
     // Input fields
-    inputBackground: '#F5F5F7',
-    inputBorder: '#E0E0E0',
+    inputBackground: '#FFFFFF',
+    inputBorder: '#CBD5E1', // Slate 300
     inputFocusBorder: BrandColors.primary,
-    inputPlaceholder: '#AEAEB2',
+    inputPlaceholder: '#94A3B8',
   },
   dark: {
-    // Backgrounds - True black for OLED
-    background: '#000000',
-    backgroundSecondary: '#1C1C1E',
-    backgroundTertiary: '#2C2C2E',
+    // Backgrounds - Professional Dark
+    background: '#020617', // Slate 950
+    backgroundSecondary: '#0F172A', // Slate 900
+    backgroundTertiary: '#1E293B', // Slate 800
 
     // Surface colors for cards
-    surface: '#1C1C1E',
-    surfaceElevated: '#2C2C2E',
-    surfacePressed: '#3A3A3C',
+    surface: '#0F172A',
+    surfaceElevated: '#1E293B',
+    surfacePressed: '#334155',
 
     // Text hierarchy
-    text: '#FFFFFF',
-    textSecondary: '#A1A1A6',
-    textTertiary: '#6B6B6B',
-    textQuaternary: '#48484A',
+    text: '#F8FAFC', // Slate 50
+    textSecondary: '#94A3B8', // Slate 400
+    textTertiary: '#64748B', // Slate 500
+    textQuaternary: '#475569', // Slate 600
 
     // Borders & Dividers
-    border: '#38383A',
-    borderLight: '#2C2C2E',
-    divider: '#38383A',
+    border: '#1E293B', // Slate 800
+    borderLight: '#334155',
+    divider: '#1E293B',
 
     // Glassmorphism - Dark mode
-    glass: 'rgba(28, 28, 30, 0.72)',
-    glassStrong: 'rgba(44, 44, 46, 0.88)',
-    glassBorder: 'rgba(255, 255, 255, 0.08)',
+    glass: 'rgba(15, 23, 42, 0.9)',
+    glassStrong: 'rgba(30, 41, 59, 0.95)',
+    glassBorder: 'rgba(51, 65, 85, 0.5)',
 
     // Tab Bar
-    tabBar: 'rgba(28, 28, 30, 0.94)',
-    tabBarBorder: 'rgba(255, 255, 255, 0.04)',
-    tabIconDefault: '#6B6B6B',
-    tabIconSelected: BrandColors.primary,
+    tabBar: '#0F172A',
+    tabBarBorder: '#1E293B',
+    tabIconDefault: '#64748B',
+    tabIconSelected: '#FFFFFF',
 
     // Overlay
-    overlay: 'rgba(0, 0, 0, 0.6)',
-    overlayLight: 'rgba(0, 0, 0, 0.3)',
+    overlay: 'rgba(0, 0, 0, 0.7)',
+    overlayLight: 'rgba(0, 0, 0, 0.4)',
 
-    // Shadows (less visible on dark)
+    // Shadows
     shadowColor: '#000000',
     shadowColorSoft: 'rgba(0, 0, 0, 0.3)',
 
@@ -123,10 +123,10 @@ export const Colors = {
     statusBar: 'light',
 
     // Input fields
-    inputBackground: '#2C2C2E',
-    inputBorder: '#3A3A3C',
-    inputFocusBorder: BrandColors.primary,
-    inputPlaceholder: '#6B6B6B',
+    inputBackground: '#0F172A',
+    inputBorder: '#334155',
+    inputFocusBorder: '#F8FAFC',
+    inputPlaceholder: '#64748B',
   },
 } as const;
 
@@ -450,17 +450,18 @@ export const HitSlop = {
 } as const;
 
 // Gradient Presets
+// Solid Colors (No more gradients)
 export const Gradients = {
-  primary: ['#FF6B00', '#FF8E33'] as const,
-  primaryStrong: ['#FF5500', '#FF7700'] as const,
-  success: ['#2ED573', '#26DE81'] as const,
-  error: ['#FF3B30', '#FF5F57'] as const,
-  info: ['#007AFF', '#5AC8FA'] as const,
-  gold: ['#FFD700', '#FFA500'] as const,
-  sunset: ['#FF6B00', '#FF3B30'] as const,
-  ocean: ['#007AFF', '#34C759'] as const,
-  dark: ['#1C1C1E', '#2C2C2E'] as const,
-  light: ['#FFFFFF', '#F5F5F7'] as const,
+  primary: [BrandColors.primary, BrandColors.primary] as const,
+  primaryStrong: [BrandColors.primaryDark, BrandColors.primaryDark] as const,
+  success: [SemanticColors.success, SemanticColors.success] as const,
+  error: [SemanticColors.error, SemanticColors.error] as const,
+  info: [SemanticColors.info, SemanticColors.info] as const,
+  gold: ['#D97706', '#D97706'] as const, // Amber 600
+  sunset: [BrandColors.secondary, BrandColors.secondary] as const,
+  ocean: [BrandColors.primaryLight, BrandColors.primaryLight] as const,
+  dark: ['#020617', '#020617'] as const,
+  light: ['#FFFFFF', '#FFFFFF'] as const,
 } as const;
 
 // Export a helper to get theme colors

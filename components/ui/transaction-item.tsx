@@ -3,7 +3,7 @@
  */
 
 import { IconSymbol, IconSymbolName } from '@/components/ui/icon-symbol';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { BrandColors, Colors, Radius, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     commission: {
         fontSize: 12,
         fontWeight: '600',
-        color: '#FF6B00',
+        color: BrandColors.primary,
         marginTop: 2,
     },
     voidedText: {

@@ -2,7 +2,7 @@
  * Section Header Component
  */
 
-import { Colors, Spacing } from '@/constants/theme';
+import { BrandColors, Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
@@ -60,7 +60,7 @@ export function SectionHeader({
                 >
                     <Text style={styles.actionText}>{action.label}</Text>
                     {action.icon && (
-                        <IconSymbol name={action.icon} size={14} color="#FF6B00" />
+                        <IconSymbol name={action.icon} size={14} color={BrandColors.primary} />
                     )}
                 </Pressable>
             )}
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.sm,
     },
     actionText: {
-        color: '#FF6B00',
+        color: BrandColors.primary,
         fontSize: 14,
         fontWeight: '600',
     },

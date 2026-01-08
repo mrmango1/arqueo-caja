@@ -3,7 +3,7 @@
  */
 
 import { IconSymbol, IconSymbolName } from '@/components/ui/icon-symbol';
-import { Animation, Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+import { Animation, Colors, Radius, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
@@ -85,28 +85,37 @@ function ActionButton({
                 onPressOut={handlePressOut}
                 style={[
                     styles.actionBtn,
-                    { backgroundColor: colors.surface },
+                    {
+                        backgroundColor: colors.surface,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.10,
+                        shadowRadius: 2,
+                        elevation: 4,
+                    },
                     compact && styles.actionBtnCompact,
-                    Shadows.sm,
                 ]}
             >
-                <View style={[styles.iconWrapper, { backgroundColor: `${item.color}15` }]}>
-                    <IconSymbol name={item.icon} size={compact ? 22 : 26} color={item.color} />
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: `${item.color}15`, borderRadius: Radius.xl }]} />
+                <View style={[styles.iconWrapper]}>
+                    <IconSymbol name={item.icon} size={compact ? 24 : 28} color={item.color} />
                 </View>
                 <Text style={[
                     styles.actionLabel,
-                    { color: colors.text },
+                    { color: isDark ? '#fff' : '#000' },
                     compact && styles.actionLabelCompact,
                 ]} numberOfLines={1}>
                     {item.label}
                 </Text>
-                {item.badge && (
-                    <View style={[styles.badge, { backgroundColor: item.color }]}>
-                        <Text style={styles.badgeText}>{item.badge}</Text>
-                    </View>
-                )}
+                {
+                    item.badge && (
+                        <View style={[styles.badge, { backgroundColor: item.color }]}>
+                            <Text style={styles.badgeText}>{item.badge}</Text>
+                        </View>
+                    )
+                }
             </AnimatedPressable>
-        </Animated.View>
+        </Animated.View >
     );
 }
 
