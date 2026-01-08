@@ -142,9 +142,9 @@ export default function AbrirCajaScreen() {
         options={{
           title: 'Abrir Caja',
           presentation: 'modal',
-          headerStyle: { backgroundColor: isDark ? '#1c1c1e' : '#fff' },
+          headerTransparent: true,
+          headerStyle: { backgroundColor: 'transparent' },
           headerTintColor: isDark ? '#fff' : '#000',
-          headerShadowVisible: true,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} style={{ padding: 8, marginLeft: -8 }}>
               <Text style={{ color: '#007AFF', fontSize: 17 }}>Cancelar</Text>
@@ -154,7 +154,8 @@ export default function AbrirCajaScreen() {
       />
 
       <ScrollView
-        style={styles.scrollView}
+        style={styles.content}
+        contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.scrollContent}
@@ -296,10 +297,10 @@ export default function AbrirCajaScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#F8FAFC',
   },
   containerDark: {
-    backgroundColor: '#000',
+    backgroundColor: '#020617',
   },
 
   // Header

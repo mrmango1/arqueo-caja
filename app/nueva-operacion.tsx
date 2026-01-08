@@ -1,6 +1,7 @@
+import { AnimatedButton } from '@/components/ui/animated-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { db } from '@/config/firebase';
-import { BrandColors } from '@/constants/theme';
+import { BrandColors, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -31,6 +32,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
 
@@ -265,9 +267,10 @@ export default function NuevaOperacionScreen() {
                 <Stack.Screen
                     options={{
                         title: 'Nueva Operación',
-                        headerStyle: { backgroundColor: isDark ? '#1c1c1e' : '#fff' },
+                        headerTransparent: true,
+                        headerStyle: { backgroundColor: 'transparent' },
                         headerTintColor: isDark ? '#fff' : '#000',
-                        headerShadowVisible: true,
+                        headerShadowVisible: false,
                         headerLeft: () => (
                             <TouchableOpacity onPress={() => router.back()} style={{ padding: 8, marginLeft: -8 }}>
                                 <Text style={{ color: '#007AFF', fontSize: 17 }}>Cancelar</Text>
@@ -386,9 +389,10 @@ export default function NuevaOperacionScreen() {
                 options={{
                     title: categoriaActual?.nombre || 'Nueva Operación',
                     presentation: 'modal',
-                    headerStyle: { backgroundColor: isDark ? '#1c1c1e' : '#fff' },
+                    headerTransparent: true,
+                    headerStyle: { backgroundColor: 'transparent' },
                     headerTintColor: isDark ? '#fff' : '#000',
-                    headerShadowVisible: true,
+                    headerShadowVisible: false,
                     headerLeft: () => (
                         <TouchableOpacity
                             onPress={() => {
@@ -416,144 +420,154 @@ export default function NuevaOperacionScreen() {
             />
 
             <ScrollView
-                style={styles.scrollView}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.formContent}
+                contentInsetAdjustmentBehavior="automatic"
+                contentContainerStyle={{
+                    paddingBottom: Spacing.md,
+                    paddingHorizontal: Spacing.lg,
+                    paddingTop: Spacing.md,
+                }}
             >
                 {/* Input de monto */}
-                <View style={[styles.amountCard, isDark && styles.cardDark]}>
-                    <Text style={[styles.amountLabel, isDark && styles.textDarkSecondary]}>Monto de la operación</Text>
-                    <View style={[styles.amountInputWrapper, { borderColor: primaryColor }]}>
-                        <Text style={[styles.amountCurrency, { color: primaryColor }]}>$</Text>
-                        <TextInput
-                            style={[styles.amountInput, isDark && styles.textDark]}
-                            placeholder="0.00"
-                            placeholderTextColor={isDark ? '#444' : '#ccc'}
-                            value={monto}
-                            onChangeText={setMonto}
-                            keyboardType="decimal-pad"
-                            editable={!loading}
-                        />
-                    </View>
-                </View>
-
-                {/* Formulario */}
-                <View style={[styles.formCard, isDark && styles.cardDark]}>
-                    {/* Canal de transacción */}
-                    {categoriaActual?.requiereBanco && (
-                        <View style={styles.formGroup}>
-                            <View style={styles.labelRow}>
-                                <IconSymbol size={16} name="building.columns" color={isDark ? '#666' : '#999'} />
-                                <Text style={[styles.formLabel, isDark && styles.textDark]}>Canal de Transacción</Text>
-                                <View style={styles.requiredBadge}>
-                                    <Text style={styles.requiredText}>REQUERIDO</Text>
-                                </View>
-                            </View>
-                            <TouchableOpacity
-                                style={[styles.selectButton, isDark && styles.selectButtonDark]}
-                                onPress={handleShowCanalesSelector}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={[
-                                    styles.selectButtonText,
-                                    !banco && styles.selectButtonPlaceholder,
-                                    isDark && banco && styles.textDark
-                                ]}>
-                                    {banco || 'Seleccionar canal'}
-                                </Text>
-                                <View style={styles.selectArrowBox}>
-                                    <IconSymbol size={16} name="chevron.down" color="#999" />
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-
-                    {/* Referencia */}
-                    {categoriaActual?.requiereReferencia && (
-                        <View style={styles.formGroup}>
-                            <View style={styles.labelRow}>
-                                <IconSymbol size={16} name="number" color={isDark ? '#666' : '#999'} />
-                                <Text style={[styles.formLabel, isDark && styles.textDark]}>
-                                    N° Referencia / Comprobante
-                                </Text>
-                            </View>
+                <Animated.View entering={FadeInUp.delay(100).springify()}>
+                    <View style={[styles.amountCard, isDark && styles.cardDark, Shadows.md]}>
+                        <Text style={[styles.amountLabel, isDark && styles.textDarkSecondary]}>Monto de la operación</Text>
+                        <View style={[styles.amountInputWrapper, { borderColor: primaryColor }, isDark && { backgroundColor: '#2c2c2e' }]}>
+                            <Text style={[styles.amountCurrency, { color: primaryColor }]}>$</Text>
                             <TextInput
-                                style={[styles.textInputField, isDark && styles.textInputFieldDark]}
-                                placeholder="Ej: 123456789"
-                                placeholderTextColor={isDark ? '#555' : '#aaa'}
-                                value={referencia}
-                                onChangeText={setReferencia}
-                                editable={!loading}
-                            />
-                        </View>
-                    )}
-
-                    {/* Comisión */}
-                    <View style={styles.formGroup}>
-                        <View style={styles.labelRow}>
-                            <IconSymbol size={16} name="dollarsign.circle" color={BrandColors.primary} />
-                            <Text style={[styles.formLabel, isDark && styles.textDark]}>
-                                Comisión cobrada
-                            </Text>
-                            <View style={styles.optionalBadge}>
-                                <Text style={styles.optionalText}>TU GANANCIA</Text>
-                            </View>
-                        </View>
-                        <View style={[styles.comisionWrapper, isDark && styles.comisionWrapperDark]}>
-                            <Text style={styles.comisionCurrency}>$</Text>
-                            <TextInput
-                                style={[styles.comisionInput, isDark && styles.textDark]}
+                                style={[styles.amountInput, isDark && styles.textDark]}
                                 placeholder="0.00"
-                                placeholderTextColor={isDark ? '#555' : '#bbb'}
-                                value={comision}
-                                onChangeText={setComision}
+                                placeholderTextColor={isDark ? '#555' : '#ccc'}
+                                value={monto}
+                                onChangeText={setMonto}
                                 keyboardType="decimal-pad"
                                 editable={!loading}
                             />
                         </View>
-                        <Text style={[styles.helperText, isDark && styles.textDarkSecondary]}>
-                            Esta cantidad se sumará a tu saldo en caja
-                        </Text>
                     </View>
+                </Animated.View>
 
-                    {/* Notas */}
-                    <View style={[styles.formGroup, { marginBottom: 0 }]}>
-                        <View style={styles.labelRow}>
-                            <IconSymbol size={16} name="note.text" color={isDark ? '#666' : '#999'} />
-                            <Text style={[styles.formLabel, isDark && styles.textDark]}>Notas</Text>
-                            <View style={styles.optionalBadge}>
-                                <Text style={styles.optionalText}>OPCIONAL</Text>
+                {/* Formulario */}
+                <Animated.View entering={FadeInUp.delay(200).springify()}>
+                    <View style={[styles.formCard, isDark && styles.cardDark, Shadows.sm]}>
+                        {/* Canal de transacción */}
+                        {categoriaActual?.requiereBanco && (
+                            <View style={styles.formGroup}>
+                                <View style={styles.labelRow}>
+                                    <IconSymbol size={16} name="building.columns" color={isDark ? '#666' : '#999'} />
+                                    <Text style={[styles.formLabel, isDark && styles.textDark]}>Canal de Transacción</Text>
+                                    <View style={styles.requiredBadge}>
+                                        <Text style={styles.requiredText}>REQUERIDO</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity
+                                    style={[styles.selectButton, isDark && styles.selectButtonDark]}
+                                    onPress={handleShowCanalesSelector}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={[
+                                        styles.selectButtonText,
+                                        !banco && styles.selectButtonPlaceholder,
+                                        isDark && banco && styles.textDark
+                                    ]}>
+                                        {banco || 'Seleccionar canal'}
+                                    </Text>
+                                    <View style={styles.selectArrowBox}>
+                                        <IconSymbol size={16} name="chevron.down" color="#999" />
+                                    </View>
+                                </TouchableOpacity>
                             </View>
+                        )}
+
+                        {/* Referencia */}
+                        {categoriaActual?.requiereReferencia && (
+                            <View style={styles.formGroup}>
+                                <View style={styles.labelRow}>
+                                    <IconSymbol size={16} name="number" color={isDark ? '#666' : '#999'} />
+                                    <Text style={[styles.formLabel, isDark && styles.textDark]}>
+                                        N° Referencia / Comprobante
+                                    </Text>
+                                </View>
+                                <TextInput
+                                    style={[styles.textInputField, isDark && styles.textInputFieldDark]}
+                                    placeholder="Ej: 123456789"
+                                    placeholderTextColor={isDark ? '#555' : '#aaa'}
+                                    value={referencia}
+                                    onChangeText={setReferencia}
+                                    editable={!loading}
+                                />
+                            </View>
+                        )}
+
+                        {/* Comisión */}
+                        <View style={styles.formGroup}>
+                            <View style={styles.labelRow}>
+                                <IconSymbol size={16} name="dollarsign.circle" color={BrandColors.primary} />
+                                <Text style={[styles.formLabel, isDark && styles.textDark]}>
+                                    Comisión cobrada
+                                </Text>
+                                <View style={styles.optionalBadge}>
+                                    <Text style={styles.optionalText}>TU GANANCIA</Text>
+                                </View>
+                            </View>
+                            <View style={[styles.comisionWrapper, isDark && styles.comisionWrapperDark]}>
+                                <Text style={styles.comisionCurrency}>$</Text>
+                                <TextInput
+                                    style={[styles.comisionInput, isDark && styles.textDark]}
+                                    placeholder="0.00"
+                                    placeholderTextColor={isDark ? '#555' : '#bbb'}
+                                    value={comision}
+                                    onChangeText={setComision}
+                                    keyboardType="decimal-pad"
+                                    editable={!loading}
+                                />
+                            </View>
+                            <Text style={[styles.helperText, isDark && styles.textDarkSecondary]}>
+                                Esta cantidad se sumará a tu saldo en caja
+                            </Text>
                         </View>
-                        <TextInput
-                            style={[styles.textAreaField, isDark && styles.textInputFieldDark]}
-                            placeholder="Observaciones adicionales..."
-                            placeholderTextColor={isDark ? '#555' : '#aaa'}
-                            value={notas}
-                            onChangeText={setNotas}
-                            multiline
-                            numberOfLines={3}
-                            textAlignVertical="top"
-                            editable={!loading}
-                        />
+
+                        {/* Notas */}
+                        <View style={[styles.formGroup, { marginBottom: 0 }]}>
+                            <View style={styles.labelRow}>
+                                <IconSymbol size={16} name="note.text" color={isDark ? '#666' : '#999'} />
+                                <Text style={[styles.formLabel, isDark && styles.textDark]}>Notas</Text>
+                                <View style={styles.optionalBadge}>
+                                    <Text style={styles.optionalText}>OPCIONAL</Text>
+                                </View>
+                            </View>
+                            <TextInput
+                                style={[styles.textAreaField, isDark && styles.textInputFieldDark]}
+                                placeholder="Observaciones adicionales..."
+                                placeholderTextColor={isDark ? '#555' : '#aaa'}
+                                value={notas}
+                                onChangeText={setNotas}
+                                multiline
+                                numberOfLines={3}
+                                textAlignVertical="top"
+                                editable={!loading}
+                            />
+                        </View>
                     </View>
-                </View>
+                </Animated.View>
 
                 {/* Botón de guardar */}
-                <TouchableOpacity
-                    style={[styles.submitBtn, { backgroundColor: primaryColor }, loading && styles.submitBtnDisabled]}
-                    onPress={handleGuardar}
-                    disabled={loading}
-                    activeOpacity={0.8}
-                >
-                    {!loading && <IconSymbol size={20} name="checkmark.circle.fill" color="#fff" />}
-                    <Text style={styles.submitBtnText}>
-                        {loading ? 'Guardando...' : 'Registrar Operación'}
-                    </Text>
-                </TouchableOpacity>
+                <Animated.View entering={FadeInUp.delay(300).springify()}>
+                    <AnimatedButton
+                        title={loading ? 'Guardando...' : 'Registrar Operación'}
+                        onPress={handleGuardar}
+                        variant="primary"
+                        icon="checkmark.circle.fill"
+                        loading={loading}
+                        disabled={loading}
+                        fullWidth
+                        size="lg"
+                        style={{ backgroundColor: primaryColor }}
+                    />
+                </Animated.View>
 
-                <View style={{ height: 40 }} />
+
             </ScrollView>
         </KeyboardAvoidingView>
     );
@@ -562,10 +576,10 @@ export default function NuevaOperacionScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f2f2f7',
+        backgroundColor: '#F8FAFC',
     },
     containerDark: {
-        backgroundColor: '#000',
+        backgroundColor: '#020617',
     },
 
     // Header simple

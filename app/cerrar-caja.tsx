@@ -243,9 +243,9 @@ export default function CerrarCajaScreen() {
       <Stack.Screen options={{
         title: 'Arqueo de Caja',
         presentation: 'modal',
-        headerStyle: { backgroundColor: isDark ? colors.surface : '#fff' },
+        headerTransparent: true,
+        headerStyle: { backgroundColor: 'transparent' },
         headerTintColor: isDark ? '#fff' : '#000',
-        headerShadowVisible: true,
         headerLeft: () => (
           <TouchableOpacity
             onPress={() => router.back()}
@@ -258,9 +258,10 @@ export default function CerrarCajaScreen() {
 
       <ScrollView
         style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scrollContent}
       >
         {/* Summary Card */}
         <Animated.View entering={FadeInUp.delay(100).springify()}>
