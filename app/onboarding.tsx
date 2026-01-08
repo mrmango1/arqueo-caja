@@ -7,6 +7,7 @@ import {
     ConfiguracionComisiones,
     ModoComision
 } from '@/types/caja';
+import { parseLocalizedFloat } from '@/utils/numbers';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -88,7 +89,7 @@ export default function OnboardingScreen() {
             }));
             return;
         }
-        const numValue = parseFloat(value);
+        const numValue = parseLocalizedFloat(value);
         setComisiones((prev) => ({
             ...prev,
             comisionSimple: {

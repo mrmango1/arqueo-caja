@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Caja, SaldoCanalInicial } from '@/types/caja';
+import { isValidNumber, parseLocalizedFloat, parseLocalizedFloatOrDefault } from '@/utils/numbers';
 import * as Haptics from 'expo-haptics';
 import { Stack, useRouter } from 'expo-router';
 import { get, push, ref } from 'firebase/database';
@@ -44,7 +45,7 @@ export default function AbrirCajaScreen() {
   // Calcular total de saldos en canales
   const totalSaldosCanales = useMemo(() => {
     return Object.values(saldosCanales).reduce((sum, val) => {
-      const num = parseFloat(val) || 0;
+      const num = parseLocalizedFloatOrDefault(val, 0);
       return sum + num;
     }, 0);
   }, [saldosCanales]);
@@ -59,13 +60,13 @@ export default function AbrirCajaScreen() {
   const handleAbrirCaja = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    if (!montoInicial || isNaN(Number(montoInicial))) {
+    if (!montoInicial || !isValidNumber(montoInicial)) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'Por favor ingresa un monto válido');
       return;
     }
 
-    const monto = parseFloat(montoInicial);
+    const monto = parseLocalizedFloat(montoInicial);
     if (monto < 0) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'El monto no puede ser negativo');
@@ -100,7 +101,7 @@ export default function AbrirCajaScreen() {
       const saldosInicialesCanales: SaldoCanalInicial[] = canalesActivos.map(canal => ({
         canalId: canal.id,
         canalNombre: canal.nombre,
-        saldo: parseFloat(saldosCanales[canal.id] || '0') || 0,
+        saldo: parseLocalizedFloatOrDefault(saldosCanales[canal.id] || '0', 0),
       }));
 
       const nuevaCaja: Omit<Caja, 'id'> & { saldosCanales?: SaldoCanalInicial[] } = {

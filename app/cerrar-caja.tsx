@@ -1,8 +1,10 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
+import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Caja, Transaccion } from '@/types/caja';
+import { Caja, SaldoCanalInicial, Transaccion } from '@/types/caja';
+import { isValidNumber, parseLocalizedFloat } from '@/utils/numbers';
 import * as Haptics from 'expo-haptics';
 import { Stack, useRouter } from 'expo-router';
 import { get, onValue, ref, update } from 'firebase/database';
@@ -25,6 +27,7 @@ export default function CerrarCajaScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { user } = useAuth();
+  const { canalesActivos } = useCanales();
 
   const [cajaActual, setCajaActual] = useState<Caja | null>(null);
   const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
@@ -33,6 +36,16 @@ export default function CerrarCajaScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const isClosing = React.useRef(false);
+
+  // Estado para saldos calculados por canal
+  const [saldosCanalesCalculados, setSaldosCanalesCalculados] = useState<{
+    [canalNombre: string]: {
+      saldoInicial: number;
+      depositos: number;
+      retiros: number;
+      saldoEsperado: number;
+    };
+  }>({});
 
   useEffect(() => {
     if (!user) return;
@@ -82,6 +95,80 @@ export default function CerrarCajaScreen() {
     return () => unsubscribe();
   }, [user]);
 
+  // Calcular saldos por canal cuando cambian las transacciones o la caja
+  useEffect(() => {
+    if (!cajaActual) return;
+
+    // Obtener saldos iniciales de la caja (si existen)
+    const saldosIniciales: SaldoCanalInicial[] = (cajaActual as any).saldosCanales || [];
+
+    // Inicializar el objeto de saldos por canal
+    const saldosPorCanal: {
+      [canalNombre: string]: {
+        saldoInicial: number;
+        depositos: number;
+        retiros: number;
+        saldoEsperado: number;
+      };
+    } = {};
+
+    // Inicializar con saldos iniciales guardados
+    saldosIniciales.forEach((saldo) => {
+      saldosPorCanal[saldo.canalNombre] = {
+        saldoInicial: saldo.saldo,
+        depositos: 0,
+        retiros: 0,
+        saldoEsperado: saldo.saldo,
+      };
+    });
+
+    // También incluir canales activos que no tengan saldo inicial registrado
+    canalesActivos.forEach((canal) => {
+      if (!saldosPorCanal[canal.nombre]) {
+        saldosPorCanal[canal.nombre] = {
+          saldoInicial: 0,
+          depositos: 0,
+          retiros: 0,
+          saldoEsperado: 0,
+        };
+      }
+    });
+
+    // Calcular movimientos por canal basándose en transacciones
+    transacciones.forEach((trans) => {
+      if (!trans.banco) return; // No tiene canal asociado
+      if (trans.anulada) return; // Transacción anulada
+
+      const bancoNombre = trans.banco;
+
+      // Si el canal no está en nuestro registro, agregarlo
+      if (!saldosPorCanal[bancoNombre]) {
+        saldosPorCanal[bancoNombre] = {
+          saldoInicial: 0,
+          depositos: 0,
+          retiros: 0,
+          saldoEsperado: 0,
+        };
+      }
+
+      // Los depósitos (cliente deposita) disminuyen el saldo del canal
+      // (porque usamos nuestro saldo bancario para hacer el depósito)
+      // Los retiros (cliente retira) aumentan el saldo del canal  
+      // (porque recibimos efectivo y transferimos desde la cuenta)
+      if (trans.categoria === 'deposito') {
+        // Depósito bancario: el cliente deposita efectivo, nosotros incrementamos nuestra cuenta bancaria
+        saldosPorCanal[bancoNombre].depositos += trans.monto;
+        saldosPorCanal[bancoNombre].saldoEsperado += trans.monto;
+      } else if (trans.categoria === 'retiro') {
+        // Retiro bancario: el cliente retira efectivo, nosotros disminuimos nuestra cuenta bancaria
+        saldosPorCanal[bancoNombre].retiros += trans.monto;
+        saldosPorCanal[bancoNombre].saldoEsperado -= trans.monto;
+      }
+    });
+
+    setSaldosCanalesCalculados(saldosPorCanal);
+  }, [cajaActual, transacciones, canalesActivos]);
+
   const calcularTotales = () => {
     const totalDepositos = transacciones.filter(t => t.tipo === 'ingreso').reduce((sum, t) => sum + t.monto, 0);
     const totalRetiros = transacciones.filter(t => t.tipo === 'egreso').reduce((sum, t) => sum + t.monto, 0);
@@ -91,14 +178,14 @@ export default function CerrarCajaScreen() {
   };
 
   const handleCerrarCaja = async () => {
-    if (!saldoReal || isNaN(Number(saldoReal))) {
+    if (!saldoReal || !isValidNumber(saldoReal)) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'Ingresa el saldo real contado');
       return;
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const saldoRealNum = parseFloat(saldoReal);
+    const saldoRealNum = parseLocalizedFloat(saldoReal);
     const { totalDepositos, totalRetiros, totalComisiones, saldoEsperado } = calcularTotales();
     const diferencia = saldoRealNum - saldoEsperado;
 
@@ -156,8 +243,8 @@ export default function CerrarCajaScreen() {
   if (!cajaActual) return null;
 
   const { totalDepositos, totalRetiros, totalComisiones, saldoEsperado } = calcularTotales();
-  const diferencia = saldoReal ? parseFloat(saldoReal) - saldoEsperado : 0;
-  const hasDiferencia = saldoReal && !isNaN(parseFloat(saldoReal));
+  const diferencia = saldoReal ? parseLocalizedFloat(saldoReal) - saldoEsperado : 0;
+  const hasDiferencia = saldoReal && isValidNumber(saldoReal);
 
   return (
     <KeyboardAvoidingView
@@ -240,6 +327,82 @@ export default function CerrarCajaScreen() {
             </View>
           </View>
         </View>
+
+        {/* Saldos en Canales de Transacción */}
+        {Object.keys(saldosCanalesCalculados).length > 0 && (
+          <View style={[styles.summaryCard, isDark && styles.cardDark]}>
+            <View style={styles.summaryHeader}>
+              <IconSymbol size={18} name="building.columns.fill" color="#007AFF" />
+              <Text style={[styles.summaryTitle, isDark && styles.textDark]}>Saldos en Canales</Text>
+            </View>
+
+            <Text style={[styles.canalSubtitle, isDark && styles.textDarkSecondary]}>
+              Balance esperado en cada cuenta bancaria
+            </Text>
+
+            {Object.entries(saldosCanalesCalculados).map(([canalNombre, datos], index) => (
+              <View key={canalNombre}>
+                {index > 0 && <View style={[styles.summaryDivider, { marginVertical: 12 }]} />}
+
+                <View style={styles.canalRow}>
+                  <View style={styles.canalInfo}>
+                    <View style={[styles.canalIcon, { backgroundColor: '#007AFF15' }]}>
+                      <IconSymbol size={14} name="building.columns" color="#007AFF" />
+                    </View>
+                    <Text style={[styles.canalName, isDark && styles.textDark]} numberOfLines={1}>
+                      {canalNombre}
+                    </Text>
+                  </View>
+                  <Text style={[styles.canalSaldo, {
+                    color: datos.saldoEsperado >= 0 ? '#007AFF' : '#FF3B30'
+                  }]}>
+                    ${datos.saldoEsperado.toFixed(2)}
+                  </Text>
+                </View>
+
+                <View style={styles.canalDetalles}>
+                  <View style={styles.canalDetalleRow}>
+                    <Text style={[styles.canalDetalleLabel, isDark && styles.textDarkSecondary]}>
+                      Saldo inicial:
+                    </Text>
+                    <Text style={[styles.canalDetalleValue, isDark && styles.textDarkSecondary]}>
+                      ${datos.saldoInicial.toFixed(2)}
+                    </Text>
+                  </View>
+                  {datos.depositos > 0 && (
+                    <View style={styles.canalDetalleRow}>
+                      <Text style={[styles.canalDetalleLabel, isDark && styles.textDarkSecondary]}>
+                        + Depósitos:
+                      </Text>
+                      <Text style={[styles.canalDetalleValue, { color: '#34C759' }]}>
+                        +${datos.depositos.toFixed(2)}
+                      </Text>
+                    </View>
+                  )}
+                  {datos.retiros > 0 && (
+                    <View style={styles.canalDetalleRow}>
+                      <Text style={[styles.canalDetalleLabel, isDark && styles.textDarkSecondary]}>
+                        - Retiros:
+                      </Text>
+                      <Text style={[styles.canalDetalleValue, { color: '#FF3B30' }]}>
+                        -${datos.retiros.toFixed(2)}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            ))}
+
+            {/* Total de todos los canales */}
+            <View style={[styles.summaryDivider, { marginTop: 16, marginBottom: 12 }]} />
+            <View style={styles.canalTotalRow}>
+              <Text style={[styles.totalLabel, isDark && styles.textDark]}>Total en Canales</Text>
+              <Text style={styles.canalTotalValue}>
+                ${Object.values(saldosCanalesCalculados).reduce((sum, datos) => sum + datos.saldoEsperado, 0).toFixed(2)}
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Conteo de efectivo */}
         <View style={[styles.countCard, isDark && styles.cardDark]}>
@@ -568,5 +731,70 @@ const styles = StyleSheet.create({
   },
   textDarkSecondary: {
     color: '#888',
+  },
+
+  // Canales section
+  canalSubtitle: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 16,
+  },
+  canalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  canalInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 10,
+  },
+  canalIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  canalName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    flex: 1,
+  },
+  canalSaldo: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  canalDetalles: {
+    marginLeft: 38,
+    marginTop: 8,
+    gap: 4,
+  },
+  canalDetalleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  canalDetalleLabel: {
+    fontSize: 12,
+    color: '#888',
+  },
+  canalDetalleValue: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#888',
+  },
+  canalTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  canalTotalValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#007AFF',
   },
 });

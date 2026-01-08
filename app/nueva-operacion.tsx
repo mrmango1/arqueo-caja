@@ -11,6 +11,7 @@ import {
     getCategoriasPorTipo,
     Transaccion
 } from '@/types/caja';
+import { isValidNumber, parseLocalizedFloat, parseLocalizedFloatOrDefault } from '@/utils/numbers';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { get, push, ref, update } from 'firebase/database';
 import React, { useState } from 'react';
@@ -81,11 +82,11 @@ export default function NuevaOperacionScreen() {
 
     // Auto-calcular comisión
     React.useEffect(() => {
-        if (!monto || isNaN(Number(monto)) || !categoriaActual) {
+        if (!monto || !isValidNumber(monto) || !categoriaActual) {
             return;
         }
 
-        const montoNum = parseFloat(monto);
+        const montoNum = parseLocalizedFloat(monto);
         const canal = canalesActivos.find(c => c.nombre === banco);
 
         // Determinar qué configuración usar
@@ -109,12 +110,12 @@ export default function NuevaOperacionScreen() {
             return;
         }
 
-        if (!monto || isNaN(Number(monto))) {
+        if (!monto || !isValidNumber(monto)) {
             Alert.alert('Error', 'Ingresa un monto válido');
             return;
         }
 
-        const montoNum = parseFloat(monto);
+        const montoNum = parseLocalizedFloat(monto);
         if (montoNum <= 0) {
             Alert.alert('Error', 'El monto debe ser mayor a 0');
             return;
@@ -125,7 +126,7 @@ export default function NuevaOperacionScreen() {
             return;
         }
 
-        const comisionNum = comision ? parseFloat(comision) : 0;
+        const comisionNum = comision ? parseLocalizedFloatOrDefault(comision, 0) : 0;
 
         setLoading(true);
 

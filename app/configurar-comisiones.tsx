@@ -7,6 +7,7 @@ import {
     ModoComision,
     RangoComision
 } from '@/types/caja';
+import { parseLocalizedFloatOrDefault } from '@/utils/numbers';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -61,7 +62,7 @@ export default function ConfigurarComisionesScreen() {
     };
 
     const handleUpdateSimple = (field: 'comisionDeposito' | 'comisionRetiro', value: string) => {
-        const numValue = parseFloat(value) || 0;
+        const numValue = parseLocalizedFloatOrDefault(value, 0);
         setConfig(prev => ({
             ...prev,
             comisionSimple: { ...prev.comisionSimple, [field]: numValue }
@@ -71,7 +72,7 @@ export default function ConfigurarComisionesScreen() {
 
     const handleUpdateRango = (index: number, field: keyof RangoComision, value: string) => {
         if (field === 'id') return;
-        const numValue = parseFloat(value) || 0;
+        const numValue = parseLocalizedFloatOrDefault(value, 0);
         const newRangos = [...config.rangos];
         newRangos[index] = { ...newRangos[index], [field]: numValue };
         setConfig(prev => ({ ...prev, rangos: newRangos }));
@@ -98,10 +99,10 @@ export default function ConfigurarComisionesScreen() {
     };
 
     const handleAddRango = () => {
-        const montoMin = parseFloat(nuevoRango.montoMin) || 0;
-        const montoMax = nuevoRango.montoMax === '' ? -1 : parseFloat(nuevoRango.montoMax) || 0;
-        const comisionDeposito = parseFloat(nuevoRango.comisionDeposito) || 0;
-        const comisionRetiro = parseFloat(nuevoRango.comisionRetiro) || 0;
+        const montoMin = parseLocalizedFloatOrDefault(nuevoRango.montoMin, 0);
+        const montoMax = nuevoRango.montoMax === '' ? -1 : parseLocalizedFloatOrDefault(nuevoRango.montoMax, 0);
+        const comisionDeposito = parseLocalizedFloatOrDefault(nuevoRango.comisionDeposito, 0);
+        const comisionRetiro = parseLocalizedFloatOrDefault(nuevoRango.comisionRetiro, 0);
 
         const newRango: RangoComision = {
             id: `r_${Date.now()}`,
