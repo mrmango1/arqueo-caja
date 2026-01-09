@@ -1,5 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BrandColors } from '@/constants/theme';
+import { BrandColors, Colors } from '@/constants/theme';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
@@ -29,6 +29,7 @@ export default function ConfigurarComisionesScreen() {
     const canalId = params.canalId as string | undefined;
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const colors = Colors[isDark ? 'dark' : 'light'];
     const { canales, comisionesDefault, actualizarComisionesDefault, actualizarComisionesCanal } = useCanales();
 
     const canal = canalId ? canales.find(c => c.id === canalId) : null;
@@ -252,15 +253,15 @@ export default function ConfigurarComisionesScreen() {
     );
 
     return (
-        <View style={[styles.container, isDark && styles.containerDark]}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             <AddRangoModal />
 
             <Stack.Screen
                 options={{
                     title: isEditingDefault ? 'Comisiones por Defecto' : (canal?.nombre || 'Comisiones'),
-                    headerStyle: { backgroundColor: isDark ? '#1c1c1e' : '#fff' },
+                    headerStyle: { backgroundColor: colors.background },
                     headerTintColor: BrandColors.primary,
-                    headerShadowVisible: true,
+                    headerShadowVisible: false,
                     headerBackTitle: 'Atrás',
                     headerRight: () => hasChanges ? (
                         <TouchableOpacity onPress={handleSave}>
@@ -511,10 +512,8 @@ export default function ConfigurarComisionesScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f2f2f7',
     },
     containerDark: {
-        backgroundColor: '#000',
     },
 
 

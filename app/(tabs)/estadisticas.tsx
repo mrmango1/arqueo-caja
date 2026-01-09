@@ -1,6 +1,6 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { db } from '@/config/firebase';
-import { BrandColors } from '@/constants/theme';
+import { BrandColors, Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Caja, Transaccion, getCategoriaById } from '@/types/caja';
@@ -23,6 +23,7 @@ const chartWidth = width - 40;
 export default function EstadisticasScreen() {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const colors = Colors[isDark ? 'dark' : 'light'];
     const { user } = useAuth();
     const [cajasCerradas, setCajasCerradas] = useState<Caja[]>([]);
     const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
@@ -159,16 +160,16 @@ export default function EstadisticasScreen() {
 
     if (loading) {
         return (
-            <View style={[styles.container, styles.centered, isDark && styles.containerDark]}>
+            <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
                 <ActivityIndicator size="large" color={BrandColors.primary} />
             </View>
         );
     }
 
     return (
-        <View style={[styles.container, isDark && styles.containerDark]}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             {/* Header unificado */}
-            <View style={[styles.topBar, isDark && styles.topBarDark]}>
+            <View style={[styles.topBar, { backgroundColor: colors.background }]}>
                 <Text style={[styles.topBarTitle, isDark && styles.textDark]}>Estadísticas</Text>
             </View>
 
@@ -305,10 +306,8 @@ export default function EstadisticasScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F2F2F7',
     },
     containerDark: {
-        backgroundColor: '#000',
     },
     centered: {
         justifyContent: 'center',
@@ -318,10 +317,8 @@ const styles = StyleSheet.create({
         paddingTop: 60,
         paddingBottom: 16,
         paddingHorizontal: 20,
-        backgroundColor: '#F2F2F7',
     },
     topBarDark: {
-        backgroundColor: '#000',
     },
     topBarTitle: {
         fontSize: 28,
@@ -477,16 +474,18 @@ const styles = StyleSheet.create({
 
     // Insight
     insightCard: {
-        backgroundColor: '#F8FAFC', // Slate 50
-        borderRadius: 20,
-        padding: 20,
+        backgroundColor: '#fff',
+        borderRadius: 24,
+        padding: 24,
         marginBottom: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(15, 23, 42, 0.1)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.03,
+        shadowRadius: 8,
+        elevation: 2,
     },
     insightCardDark: {
-        backgroundColor: '#0F172A', // Slate 900
-        borderColor: 'rgba(148, 163, 184, 0.2)',
+        backgroundColor: '#1c1c1e',
     },
     insightHeader: {
         flexDirection: 'row',

@@ -1,6 +1,6 @@
+import { formatDateHeader, groupCajasByDate } from '@/app/utils/date-utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { SectionHeader } from '@/components/ui/section-header';
 import { StatCard } from '@/components/ui/stat-card';
 import { db } from '@/config/firebase';
 import { BrandColors, Colors, Gradients, Radius, Shadows, Spacing } from '@/constants/theme';
@@ -18,10 +18,12 @@ import {
   Text,
   View
 } from 'react-native';
-import Animated, { FadeInDown, FadeInRight, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInRight, FadeInUp, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
+
+
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -34,6 +36,9 @@ export default function HistorialScreen() {
   const [cajasCerradas, setCajasCerradas] = useState<Caja[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // State for expanded days (default collapsed for stacking effect)
+  const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -53,6 +58,15 @@ export default function HistorialScreen() {
 
       cajas.sort((a, b) => (b.fechaCierre || 0) - (a.fechaCierre || 0));
       setCajasCerradas(cajas);
+
+      // Default state is now COLLAPSED (false) to show the stack effect initially
+      const grouped = groupCajasByDate(cajas);
+      const initialExpandedState: Record<string, boolean> = {};
+      Object.keys(grouped).forEach(key => {
+        initialExpandedState[key] = false;
+      });
+      setExpandedDays(initialExpandedState);
+
       setLoading(false);
     });
 
@@ -71,13 +85,16 @@ export default function HistorialScreen() {
     return { totalComisiones, totalArqueos: cajasCerradas.length, promedioComisiones };
   }, [cajasCerradas]);
 
-  const formatDate = (timestamp: number | undefined) => {
-    if (!timestamp) return '';
-    return new Date(timestamp).toLocaleDateString('es-MX', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    });
+  const groupedCajas = useMemo(() => {
+    return groupCajasByDate(cajasCerradas);
+  }, [cajasCerradas]);
+
+  const toggleDay = (dateKey: string) => {
+    setExpandedDays(prev => ({
+      ...prev,
+      [dateKey]: !prev[dateKey]
+    }));
+    Haptics.selectionAsync();
   };
 
   const formatTime = (timestamp: number | undefined) => {
@@ -92,6 +109,152 @@ export default function HistorialScreen() {
     if (!cajaId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push({ pathname: '/detalle-caja', params: { id: cajaId } });
+  };
+
+  const renderCajaCard = (caja: Caja, index: number, isStacked: boolean, totalInStack: number) => {
+    // If stacked, only show top card fully.
+    // Cards behind get scale/translate/opacity styles
+
+    let animatedStyle = {};
+    const MAX_STACK_VISIBLE = 2; // How many cards behind to show
+
+    if (isStacked) {
+      if (index === 0) {
+        // Top card - normal
+        // Add margin to account for the stack fanning out below
+        animatedStyle = { zIndex: 100, marginBottom: 24 };
+      } else if (index <= MAX_STACK_VISIBLE) {
+        // Cards behind
+        const scale = 1 - (index * 0.05); // slightly smaller
+        const translateY = index * 12;     // slightly lower (increased from 8)
+
+        // Don't fade out too much so the shadow is visible, but maybe darken or something?
+        // Actually keep opacity but ensure shadow is strong.
+        const opacity = 1;
+
+        animatedStyle = {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          transform: [{ scale }, { translateY }],
+          zIndex: 100 - index,
+          opacity,
+        };
+      } else {
+        // Hidden cards in stack
+        return null;
+      }
+    }
+
+    // Shadow container needs to be the outer Animated.View (or a wrapper inside it)
+    // The pressing logic should probably be on the card content or the whole container.
+    // Ideally: Animated.View (Shadow Wrapper) -> AnimatedPressable (Content Wrapper + overflow hidden)
+
+    return (
+      <Animated.View
+        key={caja.id}
+        entering={isStacked ? undefined : FadeInRight.delay(index * 50).springify()}
+        exiting={FadeOut.duration(200)}
+        layout={LinearTransition.duration(300)}
+        style={[
+          // Base layout styles
+          isStacked ? animatedStyle : { marginBottom: Spacing.md },
+          // Shadow styles apply to this outer container
+          Shadows.md, // Increased shadow
+          {
+            backgroundColor: colors.surface,
+            borderRadius: Radius.xl,
+            // Make sure background cards have contrast if they are white on white
+            // (shadow handles it, but maybe slight darkening?)
+          }
+        ]}
+      >
+        <AnimatedPressable
+          style={[
+            styles.historyCard,
+            // IMPORTANT: No shadow here, handled by parent
+            { backgroundColor: colors.surface }
+          ]}
+          onPress={() => isStacked ? toggleDay(String(Object.keys(groupedCajas).find(key => groupedCajas[key].includes(caja)))) : handleCardPress(caja.id)}
+          disabled={false}
+        >
+          <View style={styles.cardHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <IconSymbol size={16} name="archivebox" color={colors.textSecondary} />
+              <Text style={[styles.cardTitle, { color: colors.text }]}>
+                Cierre de Caja
+              </Text>
+            </View>
+            <View style={styles.cardHeaderRight}>
+              {(caja.totalComisiones || 0) > 0 && (
+                <View style={styles.badgeSuccess}>
+                  <Text style={styles.badgeSuccessText}>
+                    +${(caja.totalComisiones || 0).toFixed(2)}
+                  </Text>
+                </View>
+              )}
+              {!isStacked && (
+                <IconSymbol size={16} name="chevron.right" color={colors.textTertiary} />
+              )}
+              {isStacked && index === 0 && (
+                <View style={{ backgroundColor: colors.backgroundTertiary, borderRadius: 12, paddingHorizontal: 6, paddingVertical: 2 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary }}>{totalInStack}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
+
+          <View style={styles.cardStats}>
+            <View style={styles.statCol}>
+              <Text style={[styles.statColLabel, { color: colors.textTertiary }]}>Inicial</Text>
+              <Text style={[styles.statColValue, { color: colors.text }]}>
+                ${caja.montoInicial.toFixed(2)}
+              </Text>
+            </View>
+            <View style={styles.statCol}>
+              <Text style={[styles.statColLabel, { color: colors.textTertiary }]}>Entradas</Text>
+              <Text style={[styles.statColValue, { color: '#34C759' }]}>
+                +${(caja.totalDepositos || 0).toFixed(2)}
+              </Text>
+            </View>
+            <View style={styles.statCol}>
+              <Text style={[styles.statColLabel, { color: colors.textTertiary }]}>Salidas</Text>
+              <Text style={[styles.statColValue, { color: '#FF3B30' }]}>
+                -${(caja.totalRetiros || 0).toFixed(2)}
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.cardFooter, { backgroundColor: colors.backgroundTertiary }]}>
+            <View style={styles.footerRow}>
+              <IconSymbol size={14} name="clock" color={colors.textTertiary} />
+              <Text style={[styles.footerTime, { color: colors.textTertiary }]}>
+                {formatTime(caja.fechaApertura)} - {formatTime(caja.fechaCierre)}
+              </Text>
+            </View>
+
+            {caja.diferencia !== undefined && caja.diferencia !== 0 && (
+              <View style={styles.footerRow}>
+                <IconSymbol
+                  size={14}
+                  name="exclamationmark.triangle.fill"
+                  color={(caja.diferencia || 0) > 0 ? '#007AFF' : '#FF3B30'}
+                />
+                <Text style={[
+                  styles.diferenciaText,
+                  { color: (caja.diferencia || 0) > 0 ? '#007AFF' : '#FF3B30' }
+                ]}>
+                  {(caja.diferencia || 0) > 0 ? 'Sobran' : 'Faltan'} ${(Math.abs(caja.diferencia || 0)).toFixed(2)}
+                </Text>
+              </View>
+            )}
+          </View>
+        </AnimatedPressable>
+      </Animated.View>
+    );
   };
 
   if (loading) {
@@ -172,10 +335,9 @@ export default function HistorialScreen() {
           </Animated.View>
         )}
 
-        <SectionHeader
-          title="Cierres Recientes"
-          style={{ marginTop: Spacing.lg }}
-        />
+        <View style={{ marginTop: Spacing.lg }}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Cierres Recientes</Text>
+        </View>
 
         {cajasCerradas.length === 0 ? (
           <EmptyState
@@ -186,81 +348,44 @@ export default function HistorialScreen() {
           />
         ) : (
           <View style={styles.listContainer}>
-            {cajasCerradas.map((caja, index) => (
-              <Animated.View
-                key={caja.id}
-                entering={FadeInRight.delay(index * 80).springify()}
-              >
-                <AnimatedPressable
-                  style={[styles.historyCard, { backgroundColor: colors.surface }, Shadows.sm]}
-                  onPress={() => handleCardPress(caja.id)}
-                >
-                  <View style={styles.cardHeader}>
-                    <Text style={[styles.cardDate, { color: colors.text }]}>
-                      {formatDate(caja.fechaCierre)}
+            {Object.entries(groupedCajas).map(([dateKey, cajasForDay], groupIndex) => {
+              const headerTitle = formatDateHeader(cajasForDay[0].fechaCierre!);
+              const isExpanded = expandedDays[dateKey];
+              const isSingleItem = cajasForDay.length === 1;
+
+              return (
+                <View key={dateKey} style={styles.dayGroup}>
+                  {/* Header - Make it clickable to toggle as well */}
+                  <Pressable
+                    style={styles.dayHeader}
+                    onPress={() => !isSingleItem && toggleDay(dateKey)}
+                    hitSlop={8}
+                  >
+                    <Text style={[styles.dayHeaderText, { color: colors.textSecondary }]}>
+                      {headerTitle}
                     </Text>
-                    <View style={styles.cardHeaderRight}>
-                      {(caja.totalComisiones || 0) > 0 && (
-                        <View style={styles.badgeSuccess}>
-                          <Text style={styles.badgeSuccessText}>
-                            +${(caja.totalComisiones || 0).toFixed(2)}
-                          </Text>
-                        </View>
-                      )}
-                      <IconSymbol size={16} name="chevron.right" color={colors.textTertiary} />
-                    </View>
-                  </View>
-
-                  <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
-
-                  <View style={styles.cardStats}>
-                    <View style={styles.statCol}>
-                      <Text style={[styles.statColLabel, { color: colors.textTertiary }]}>Inicial</Text>
-                      <Text style={[styles.statColValue, { color: colors.text }]}>
-                        ${caja.montoInicial.toFixed(2)}
+                    {!isSingleItem && (
+                      <Text style={{ fontSize: 12, color: BrandColors.primary, fontWeight: '600' }}>
+                        {isExpanded ? 'Ver menos' : 'Ver todo'}
                       </Text>
-                    </View>
-                    <View style={styles.statCol}>
-                      <Text style={[styles.statColLabel, { color: colors.textTertiary }]}>Entradas</Text>
-                      <Text style={[styles.statColValue, { color: '#34C759' }]}>
-                        +${(caja.totalDepositos || 0).toFixed(2)}
-                      </Text>
-                    </View>
-                    <View style={styles.statCol}>
-                      <Text style={[styles.statColLabel, { color: colors.textTertiary }]}>Salidas</Text>
-                      <Text style={[styles.statColValue, { color: '#FF3B30' }]}>
-                        -${(caja.totalRetiros || 0).toFixed(2)}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={[styles.cardFooter, { backgroundColor: colors.backgroundTertiary }]}>
-                    <View style={styles.footerRow}>
-                      <IconSymbol size={14} name="clock" color={colors.textTertiary} />
-                      <Text style={[styles.footerTime, { color: colors.textTertiary }]}>
-                        {formatTime(caja.fechaApertura)} - {formatTime(caja.fechaCierre)}
-                      </Text>
-                    </View>
-
-                    {caja.diferencia !== undefined && caja.diferencia !== 0 && (
-                      <View style={styles.footerRow}>
-                        <IconSymbol
-                          size={14}
-                          name="exclamationmark.triangle.fill"
-                          color={(caja.diferencia || 0) > 0 ? '#007AFF' : '#FF3B30'}
-                        />
-                        <Text style={[
-                          styles.diferenciaText,
-                          { color: (caja.diferencia || 0) > 0 ? '#007AFF' : '#FF3B30' }
-                        ]}>
-                          {(caja.diferencia || 0) > 0 ? 'Sobran' : 'Faltan'} ${(Math.abs(caja.diferencia || 0)).toFixed(2)}
-                        </Text>
-                      </View>
                     )}
-                  </View>
-                </AnimatedPressable>
-              </Animated.View>
-            ))}
+                  </Pressable>
+
+                  {/* Content - Stacked or Expanded */}
+                  <Animated.View
+                    layout={LinearTransition.duration(300)}
+                    style={[styles.dayContent]}
+                  >
+                    {cajasForDay.map((caja, index) =>
+                      // If single item, always show normal. If multiple:
+                      // - Expanded: Show all normally
+                      // - Collapsed: Show as stack
+                      renderCajaCard(caja, index, !isExpanded && !isSingleItem, cajasForDay.length)
+                    )}
+                  </Animated.View>
+                </View>
+              );
+            })}
           </View>
         )}
 
@@ -317,6 +442,7 @@ const styles = StyleSheet.create({
   avgCardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: Spacing.md,
   },
   avgIcon: {
@@ -335,10 +461,36 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // List
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: Spacing.md,
+  },
+
+  // List Groups
   listContainer: {
     gap: Spacing.base,
   },
+  dayGroup: {
+    marginBottom: Spacing.sm,
+  },
+  dayHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  dayHeaderText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  dayContent: {
+    // No fixed gap when stacking to allow overlap
+  },
+
+  // Card
   historyCard: {
     borderRadius: Radius.xl,
     padding: Spacing.base,
@@ -350,10 +502,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.md,
   },
-  cardDate: {
-    fontSize: 16,
-    fontWeight: '700',
-    textTransform: 'capitalize',
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   cardHeaderRight: {
     flexDirection: 'row',

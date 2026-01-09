@@ -1,5 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BrandColors } from '@/constants/theme';
+import { BrandColors, Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,6 +23,7 @@ export default function EditarPerfilScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const colors = Colors[isDark ? 'dark' : 'light'];
     const { user } = useAuth();
 
     const [nombreUsuario, setNombreUsuario] = useState('');
@@ -92,20 +93,20 @@ export default function EditarPerfilScreen() {
 
     if (loading) {
         return (
-            <View style={[styles.container, styles.centered, isDark && styles.containerDark]}>
+            <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
                 <ActivityIndicator size="large" color={BrandColors.primary} />
             </View>
         );
     }
 
     return (
-        <View style={[styles.container, isDark && styles.containerDark]}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
 
             <Stack.Screen options={{
                 title: 'Editar Perfil',
-                headerStyle: { backgroundColor: isDark ? '#000' : '#F2F2F7' },
+                headerStyle: { backgroundColor: colors.background },
                 headerTintColor: BrandColors.primary,
-                headerShadowVisible: true,
+                headerShadowVisible: false,
                 headerLeft: () => (
                     <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: -8 }}>
                         <IconSymbol size={28} name="chevron.left" color={BrandColors.primary} />
@@ -177,10 +178,8 @@ export default function EditarPerfilScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F2F2F7',
     },
     containerDark: {
-        backgroundColor: '#000',
     },
     centered: {
         justifyContent: 'center',

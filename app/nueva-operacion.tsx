@@ -1,7 +1,7 @@
 import { AnimatedButton } from '@/components/ui/animated-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { db } from '@/config/firebase';
-import { BrandColors, Shadows, Spacing } from '@/constants/theme';
+import { BrandColors, Colors, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -42,6 +42,7 @@ export default function NuevaOperacionScreen() {
     const tipoInicial = params.tipo as CategoriaOperacion | undefined;
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const colors = Colors[isDark ? 'dark' : 'light'];
     const { user } = useAuth();
     const { canalesActivos, comisionesDefault } = useCanales();
 
@@ -263,7 +264,7 @@ export default function NuevaOperacionScreen() {
     // Selector de categorías
     if (!categoriaSeleccionada) {
         return (
-            <View style={[styles.container, isDark && styles.containerDark]}>
+            <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <Stack.Screen
                     options={{
                         title: 'Nueva Operación',
@@ -282,6 +283,7 @@ export default function NuevaOperacionScreen() {
                 <ScrollView
                     style={styles.scrollView}
                     showsVerticalScrollIndicator={false}
+                    contentInsetAdjustmentBehavior="automatic"
                     contentContainerStyle={styles.selectorContent}
                 >
                     {/* Ingresos */}
@@ -379,7 +381,7 @@ export default function NuevaOperacionScreen() {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={[styles.container, isDark && styles.containerDark]}
+            style={[styles.container, { backgroundColor: colors.background }]}
         >
             <CanalModal />
 
@@ -576,10 +578,8 @@ export default function NuevaOperacionScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
     },
     containerDark: {
-        backgroundColor: '#020617',
     },
 
     // Header simple

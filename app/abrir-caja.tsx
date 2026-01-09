@@ -1,6 +1,6 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { db } from '@/config/firebase';
-import { BrandColors } from '@/constants/theme';
+import { BrandColors, Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -27,6 +27,7 @@ export default function AbrirCajaScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const colors = Colors[isDark ? 'dark' : 'light'];
   const { user } = useAuth();
   const { canalesActivos } = useCanales();
 
@@ -136,7 +137,7 @@ export default function AbrirCajaScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, isDark && styles.containerDark]}
+      style={[styles.container, { backgroundColor: colors.background }]}
     >
       <Stack.Screen
         options={{
@@ -154,7 +155,7 @@ export default function AbrirCajaScreen() {
       />
 
       <ScrollView
-        style={styles.content}
+        style={styles.scrollView}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -297,10 +298,8 @@ export default function AbrirCajaScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   containerDark: {
-    backgroundColor: '#020617',
   },
 
   // Header

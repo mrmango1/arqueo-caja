@@ -1,5 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BrandColors } from '@/constants/theme';
+import { BrandColors, Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -34,6 +34,7 @@ export default function OnboardingScreen() {
     const { canales, toggleCanal, comisionesDefault, actualizarComisionesDefault } = useCanales();
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const colors = Colors[isDark ? 'dark' : 'light'];
 
     const [currentStep, setCurrentStep] = useState<Step>('welcome');
     const [loading, setLoading] = useState(false);
@@ -278,7 +279,7 @@ export default function OnboardingScreen() {
     );
 
     return (
-        <View style={[styles.container, isDark && styles.containerDark]}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             <View style={[styles.background, { backgroundColor: BrandColors.primary }]} />
 
             <View style={styles.content}>
@@ -293,10 +294,8 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f7',
     },
     containerDark: {
-        backgroundColor: '#000',
     },
     background: {
         position: 'absolute',

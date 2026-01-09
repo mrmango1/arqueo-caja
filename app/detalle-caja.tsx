@@ -1,6 +1,6 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { db } from '@/config/firebase';
-import { BrandColors, SemanticColors } from '@/constants/theme';
+import { BrandColors, Colors, SemanticColors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Caja, Transaccion, getCategoriaById } from '@/types/caja';
@@ -20,6 +20,7 @@ export default function DetalleCajaScreen() {
     const { id } = useLocalSearchParams();
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const colors = Colors[isDark ? 'dark' : 'light'];
     const { user } = useAuth();
 
     const [caja, setCaja] = useState<Caja | null>(null);
@@ -83,7 +84,7 @@ export default function DetalleCajaScreen() {
 
     if (loading) {
         return (
-            <View style={[styles.container, styles.centered, isDark && styles.containerDark]}>
+            <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
                 <ActivityIndicator size="large" color={BrandColors.primary} />
             </View>
         );
@@ -92,11 +93,11 @@ export default function DetalleCajaScreen() {
     if (!caja) return null;
 
     return (
-        <View style={[styles.container, isDark && styles.containerDark]}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             <Stack.Screen
                 options={{
                     title: 'Detalle de Cierre',
-                    headerStyle: { backgroundColor: isDark ? '#1c1c1e' : '#F2F2F7' },
+                    headerStyle: { backgroundColor: colors.background },
                     headerTintColor: isDark ? '#fff' : '#000',
                     headerShadowVisible: false,
                     headerBackTitle: 'Atrás',
@@ -255,10 +256,8 @@ export default function DetalleCajaScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F2F2F7',
     },
     containerDark: {
-        backgroundColor: '#000',
     },
     centered: {
         justifyContent: 'center',

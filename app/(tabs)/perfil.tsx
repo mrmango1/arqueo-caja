@@ -1,5 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BrandColors } from '@/constants/theme';
+import { BrandColors, Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -45,6 +45,7 @@ export default function ConfiguracionScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const colors = Colors[isDark ? 'dark' : 'light'];
   const { user, signOut } = useAuth();
   const { canales, toggleCanal, agregarCanal, eliminarCanal } = useCanales();
   const { isAbierta } = useCaja();
@@ -245,10 +246,10 @@ export default function ConfiguracionScreen() {
   );
 
   return (
-    <View style={[styles.container, isDark && styles.containerDark]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <AddCanalModal />
 
-      <View style={[styles.topBar, isDark && styles.topBarDark]}>
+      <View style={[styles.topBar, { backgroundColor: colors.background }]}>
         <Text style={[styles.topBarTitle, isDark && styles.textDark]}>Ajustes</Text>
       </View>
 
@@ -285,9 +286,7 @@ export default function ConfiguracionScreen() {
             style={styles.menuItem}
             onPress={() => router.push('/configurar-comisiones')}
           >
-            <View style={[styles.menuIcon, { backgroundColor: '#34C75915' }]}>
-              <IconSymbol size={18} name="dollarsign" color="#34C759" />
-            </View>
+            <IconSymbol size={22} name="dollarsign" color="#34C759" />
             <View style={styles.menuContent}>
               <Text style={[styles.menuTitle, isDark && styles.textDark]}>Comisiones</Text>
               <Text style={styles.menuSubtitle}>Configurar valores por defecto y por banco</Text>
@@ -313,9 +312,7 @@ export default function ConfiguracionScreen() {
                   style={styles.channelInfo}
                   onPress={() => router.push(`/configurar-comisiones?canalId=${canal.id}`)}
                 >
-                  <View style={[styles.channelIcon, { backgroundColor: canal.activo ? 'rgba(15, 23, 42, 0.1)' : '#eee' }]}>
-                    <IconSymbol size={16} name="building.columns" color={canal.activo ? BrandColors.primary : '#999'} />
-                  </View>
+                  <IconSymbol size={22} name="building.columns" color={canal.activo ? BrandColors.primary : '#999'} />
                   <View>
                     <Text style={[styles.channelName, isDark && styles.textDark, !canal.activo && styles.textDisabled]}>
                       {canal.nombre}
@@ -370,9 +367,7 @@ export default function ConfiguracionScreen() {
         <Text style={[styles.sectionTitle, isDark && styles.textDark]}>Soporte</Text>
         <View style={[styles.card, isDark && styles.cardDark]}>
           <TouchableOpacity style={styles.menuItem} onPress={() => Linking.openURL('mailto:soporte@minegocio.com')}>
-            <View style={[styles.menuIcon, { backgroundColor: 'rgba(15, 23, 42, 0.1)' }]}>
-              <IconSymbol size={18} name="envelope.fill" color={BrandColors.primary} />
-            </View>
+            <IconSymbol size={22} name="envelope.fill" color={BrandColors.primary} />
             <Text style={[styles.menuTitle, isDark && styles.textDark]}>Contactar Soporte</Text>
           </TouchableOpacity>
         </View>
@@ -395,22 +390,18 @@ export default function ConfiguracionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   containerDark: {
-    backgroundColor: '#000',
   },
   topBar: {
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    backgroundColor: '#F2F2F7',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   topBarDark: {
-    backgroundColor: '#000',
   },
   topBarTitle: {
     fontSize: 28,
@@ -540,15 +531,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
+    gap: 12,
   },
-  menuIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
+
   menuContent: {
     flex: 1,
   },
@@ -575,13 +560,7 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
-  channelIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
   channelName: {
     fontSize: 15,
     fontWeight: '500',
