@@ -49,12 +49,44 @@ export default function ConfigurarComisionesScreen() {
         comisionRetiro: '',
     });
 
+    // String states for commission inputs to avoid conversion issues
+    const [comisionDepositoStr, setComisionDepositoStr] = useState(
+        config.comisionSimple.comisionDeposito.toString()
+    );
+    const [comisionRetiroStr, setComisionRetiroStr] = useState(
+        config.comisionSimple.comisionRetiro.toString()
+    );
+    const [rangosInputs, setRangosInputs] = useState<{ [key: string]: { deposito: string; retiro: string } }>({});
+
     useEffect(() => {
         if (isEditingDefault) {
             setConfig(comisionesDefault);
+            setComisionDepositoStr(comisionesDefault.comisionSimple.comisionDeposito.toString());
+            setComisionRetiroStr(comisionesDefault.comisionSimple.comisionRetiro.toString());
+            // Initialize rangos inputs
+            const newRangosInputs: { [key: string]: { deposito: string; retiro: string } } = {};
+            comisionesDefault.rangos.forEach(r => {
+                newRangosInputs[r.id] = {
+                    deposito: r.comisionDeposito.toString(),
+                    retiro: r.comisionRetiro.toString(),
+                };
+            });
+            setRangosInputs(newRangosInputs);
         } else if (canal) {
-            setConfig(canal.configuracionComisiones || CONFIGURACION_COMISIONES_DEFAULT);
+            const configToUse = canal.configuracionComisiones || CONFIGURACION_COMISIONES_DEFAULT;
+            setConfig(configToUse);
             setUsarPersonalizadas(canal.usarComisionesPersonalizadas || false);
+            setComisionDepositoStr(configToUse.comisionSimple.comisionDeposito.toString());
+            setComisionRetiroStr(configToUse.comisionSimple.comisionRetiro.toString());
+            // Initialize rangos inputs
+            const newRangosInputs: { [key: string]: { deposito: string; retiro: string } } = {};
+            configToUse.rangos.forEach(r => {
+                newRangosInputs[r.id] = {
+                    deposito: r.comisionDeposito.toString(),
+                    retiro: r.comisionRetiro.toString(),
+                };
+            });
+            setRangosInputs(newRangosInputs);
         }
     }, [canal, comisionesDefault, isEditingDefault]);
 
@@ -64,6 +96,13 @@ export default function ConfigurarComisionesScreen() {
     };
 
     const handleUpdateSimple = (field: 'comisionDeposito' | 'comisionRetiro', value: string) => {
+        // Update the string state first
+        if (field === 'comisionDeposito') {
+            setComisionDepositoStr(value);
+        } else {
+            setComisionRetiroStr(value);
+        }
+        // Then update the numeric config
         const numValue = parseLocalizedFloatOrDefault(value, 0);
         setConfig(prev => ({
             ...prev,
@@ -74,6 +113,18 @@ export default function ConfigurarComisionesScreen() {
 
     const handleUpdateRango = (index: number, field: keyof RangoComision, value: string) => {
         if (field === 'id') return;
+        const rango = config.rangos[index];
+        // Update string state
+        if (field === 'comisionDeposito' || field === 'comisionRetiro') {
+            setRangosInputs(prev => ({
+                ...prev,
+                [rango.id]: {
+                    ...prev[rango.id],
+                    [field === 'comisionDeposito' ? 'deposito' : 'retiro']: value,
+                }
+            }));
+        }
+        // Update numeric config
         const numValue = parseLocalizedFloatOrDefault(value, 0);
         const newRangos = [...config.rangos];
         newRangos[index] = { ...newRangos[index], [field]: numValue };
@@ -116,6 +167,14 @@ export default function ConfigurarComisionesScreen() {
 
         const newRangos = [...config.rangos, newRango].sort((a, b) => a.montoMin - b.montoMin);
         setConfig(prev => ({ ...prev, rangos: newRangos }));
+        // Initialize string inputs for the new range
+        setRangosInputs(prev => ({
+            ...prev,
+            [newRango.id]: {
+                deposito: comisionDeposito.toString(),
+                retiro: comisionRetiro.toString(),
+            }
+        }));
         setHasChanges(true);
         setShowAddModal(false);
         setNuevoRango({
@@ -403,7 +462,7 @@ export default function ConfigurarComisionesScreen() {
                                             <Text style={[styles.simpleCurrency, isDark && styles.simpleCurrencyDark]}>$</Text>
                                             <TextInput
                                                 style={[styles.simpleInput, isDark && styles.textDark]}
-                                                value={config.comisionSimple.comisionDeposito.toString()}
+                                                value={comisionDepositoStr}
                                                 onChangeText={(val) => handleUpdateSimple('comisionDeposito', val)}
                                                 keyboardType="decimal-pad"
                                                 placeholder="0.00"
@@ -427,7 +486,7 @@ export default function ConfigurarComisionesScreen() {
                                             <Text style={[styles.simpleCurrency, isDark && styles.simpleCurrencyDark]}>$</Text>
                                             <TextInput
                                                 style={[styles.simpleInput, isDark && styles.textDark]}
-                                                value={config.comisionSimple.comisionRetiro.toString()}
+                                                value={comisionRetiroStr}
                                                 onChangeText={(val) => handleUpdateSimple('comisionRetiro', val)}
                                                 keyboardType="decimal-pad"
                                                 placeholder="0.00"
@@ -464,7 +523,7 @@ export default function ConfigurarComisionesScreen() {
                                                 <Text style={styles.cellCurrency}>$</Text>
                                                 <TextInput
                                                     style={[styles.cellInput, isDark && styles.cellInputDark]}
-                                                    value={rango.comisionDeposito.toString()}
+                                                    value={rangosInputs[rango.id]?.deposito ?? rango.comisionDeposito.toString()}
                                                     onChangeText={(val) => handleUpdateRango(index, 'comisionDeposito', val)}
                                                     keyboardType="decimal-pad"
                                                 />
@@ -473,7 +532,7 @@ export default function ConfigurarComisionesScreen() {
                                                 <Text style={styles.cellCurrency}>$</Text>
                                                 <TextInput
                                                     style={[styles.cellInput, isDark && styles.cellInputDark]}
-                                                    value={rango.comisionRetiro.toString()}
+                                                    value={rangosInputs[rango.id]?.retiro ?? rango.comisionRetiro.toString()}
                                                     onChangeText={(val) => handleUpdateRango(index, 'comisionRetiro', val)}
                                                     keyboardType="decimal-pad"
                                                 />
