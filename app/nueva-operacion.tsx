@@ -125,7 +125,7 @@ export default function NuevaOperacionScreen() {
             return;
         }
 
-        if (categoriaActual?.requiereBanco && !banco) {
+        if (!banco) {
             Alert.alert('Error', 'Selecciona el banco');
             return;
         }
@@ -454,53 +454,51 @@ export default function NuevaOperacionScreen() {
                 <Animated.View entering={FadeInUp.delay(200).springify()}>
                     <View style={[styles.formCard, { backgroundColor: colors.surface }, Shadows.sm]}>
                         {/* Canal de transacción */}
-                        {categoriaActual?.requiereBanco && (
-                            <View style={styles.formGroup}>
-                                <View style={styles.labelRow}>
-                                    <IconSymbol size={16} name="building.columns" color={colors.textSecondary} />
-                                    <Text style={[styles.formLabel, { color: colors.text }]}>Canal de Transacción</Text>
-                                    <View style={styles.requiredBadge}>
-                                        <Text style={styles.requiredText}>REQUERIDO</Text>
-                                    </View>
+                        <View style={styles.formGroup}>
+                            <View style={styles.labelRow}>
+                                <IconSymbol size={16} name="building.columns" color={colors.textSecondary} />
+                                <Text style={[styles.formLabel, { color: colors.text }]}>Canal de Transacción</Text>
+                                <View style={styles.requiredBadge}>
+                                    <Text style={styles.requiredText}>REQUERIDO</Text>
                                 </View>
-                                <TouchableOpacity
-                                    style={[styles.selectButton, { backgroundColor: colors.backgroundTertiary }]}
-                                    onPress={handleShowCanalesSelector}
-                                    activeOpacity={0.7}
-                                >
-                                    <Text style={[
-                                        styles.selectButtonText,
-                                        !banco && styles.selectButtonPlaceholder,
-                                        { color: banco ? colors.text : colors.textSecondary }
-                                    ]}>
-                                        {banco || 'Seleccionar canal'}
-                                    </Text>
-                                    <View style={[styles.selectArrowBox, isDark && styles.selectArrowBoxDark]}>
-                                        <IconSymbol size={16} name="chevron.down" color="#999" />
-                                    </View>
-                                </TouchableOpacity>
                             </View>
-                        )}
+                            <TouchableOpacity
+                                style={[styles.selectButton, { backgroundColor: colors.backgroundTertiary }]}
+                                onPress={handleShowCanalesSelector}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[
+                                    styles.selectButtonText,
+                                    !banco && styles.selectButtonPlaceholder,
+                                    { color: banco ? colors.text : colors.textSecondary }
+                                ]}>
+                                    {banco || 'Seleccionar canal'}
+                                </Text>
+                                <View style={[styles.selectArrowBox, isDark && styles.selectArrowBoxDark]}>
+                                    <IconSymbol size={16} name="chevron.down" color="#999" />
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+
 
                         {/* Referencia */}
-                        {categoriaActual?.requiereReferencia && (
-                            <View style={styles.formGroup}>
-                                <View style={styles.labelRow}>
-                                    <IconSymbol size={16} name="number" color={colors.textSecondary} />
-                                    <Text style={[styles.formLabel, { color: colors.text }]}>
-                                        N° Referencia / Comprobante
-                                    </Text>
-                                </View>
-                                <TextInput
-                                    style={[styles.textInputField, { backgroundColor: colors.backgroundTertiary, color: colors.text }]}
-                                    placeholder="Ej: 123456789"
-                                    placeholderTextColor={isDark ? '#555' : '#aaa'}
-                                    value={referencia}
-                                    onChangeText={setReferencia}
-                                    editable={!loading}
-                                />
+                        <View style={styles.formGroup}>
+                            <View style={styles.labelRow}>
+                                <IconSymbol size={16} name="number" color={colors.textSecondary} />
+                                <Text style={[styles.formLabel, { color: colors.text }]}>
+                                    N° Referencia / Comprobante
+                                </Text>
                             </View>
-                        )}
+                            <TextInput
+                                style={[styles.textInputField, { backgroundColor: colors.backgroundTertiary, color: colors.text }]}
+                                placeholder="Ej: 123456789"
+                                placeholderTextColor={isDark ? '#555' : '#aaa'}
+                                value={referencia}
+                                onChangeText={setReferencia}
+                                editable={!loading}
+                            />
+                        </View>
+
 
                         {/* Comisión */}
                         <View style={styles.formGroup}>

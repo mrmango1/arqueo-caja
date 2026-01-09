@@ -146,10 +146,10 @@ export default function CerrarCajaScreen() {
         };
       }
 
-      if (trans.categoria === 'deposito') {
+      if (trans.tipo === 'ingreso') {
         saldosPorCanal[bancoNombre].depositos += trans.monto;
         saldosPorCanal[bancoNombre].saldoEsperado += trans.monto;
-      } else if (trans.categoria === 'retiro') {
+      } else if (trans.tipo === 'egreso') {
         saldosPorCanal[bancoNombre].retiros += trans.monto;
         saldosPorCanal[bancoNombre].saldoEsperado -= trans.monto;
       }
