@@ -156,10 +156,10 @@ export default function HistorialScreen() {
         key={caja.id}
         entering={isStacked ? undefined : FadeInRight.delay(index * 50).springify()}
         exiting={FadeOut.duration(200)}
-        layout={LinearTransition.duration(300)}
+        layout={index === 0 ? undefined : LinearTransition.springify().damping(70).stiffness(500)}
         style={[
-          // Base layout styles
-          isStacked ? animatedStyle : { marginBottom: Spacing.md },
+          // Base layout styles - first card always on top
+          isStacked ? animatedStyle : { marginBottom: Spacing.md, zIndex: index === 0 ? 100 : 50 - index },
           // Shadow styles apply to this outer container
           Shadows.md, // Increased shadow
           {
@@ -373,7 +373,7 @@ export default function HistorialScreen() {
 
                   {/* Content - Stacked or Expanded */}
                   <Animated.View
-                    layout={LinearTransition.duration(300)}
+                    layout={LinearTransition.springify().damping(60).stiffness(600)}
                     style={[styles.dayContent]}
                   >
                     {cajasForDay.map((caja, index) =>
