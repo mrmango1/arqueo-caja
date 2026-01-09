@@ -312,7 +312,7 @@ export default function ConfiguracionScreen() {
                   style={styles.channelInfo}
                   onPress={() => router.push(`/configurar-comisiones?canalId=${canal.id}`)}
                 >
-                  <IconSymbol size={22} name="building.columns" color={canal.activo ? BrandColors.primary : '#999'} />
+                  <IconSymbol size={22} name="building.columns" color={canal.activo ? (isDark ? colors.text : BrandColors.primary) : colors.textSecondary} />
                   <View>
                     <Text style={[styles.channelName, { color: colors.text }, !canal.activo && styles.textDisabled]}>
                       {canal.nombre}
@@ -325,7 +325,7 @@ export default function ConfiguracionScreen() {
                 <Switch
                   value={canal.activo}
                   onValueChange={() => handleToggleCanal(canal.id)}
-                  trackColor={{ false: '#e0e0e0', true: BrandColors.primary }}
+                  trackColor={{ false: isDark ? '#334155' : '#e0e0e0', true: '#34C759' }}
                   thumbColor={isDark ? '#f4f3f4' : '#fff'}
                 />
               </View>
@@ -338,26 +338,26 @@ export default function ConfiguracionScreen() {
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <View style={styles.channelRow}>
             <View style={[styles.channelInfo, { gap: 12 }]}>
-              <IconSymbol size={20} name="bell.fill" color={BrandColors.primary} />
+              <IconSymbol size={20} name="bell.fill" color={isDark ? '#F8FAFC' : BrandColors.primary} />
               <Text style={[styles.menuTitle, { color: colors.text }]}>Notificaciones</Text>
             </View>
             <Switch
               value={config.notificacionesPush}
               onValueChange={(v) => updateToggle('notificacionesPush', v)}
-              trackColor={{ false: '#e0e0e0', true: BrandColors.primary }}
+              trackColor={{ false: isDark ? '#334155' : '#e0e0e0', true: '#34C759' }}
               thumbColor={isDark ? '#f4f3f4' : '#fff'}
             />
           </View>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <View style={styles.channelRow}>
             <View style={[styles.channelInfo, { gap: 12 }]}>
-              <IconSymbol size={20} name="speaker.wave.2.fill" color={BrandColors.primary} />
+              <IconSymbol size={20} name="speaker.wave.2.fill" color={isDark ? '#F8FAFC' : BrandColors.primary} />
               <Text style={[styles.menuTitle, { color: colors.text }]}>Sonidos</Text>
             </View>
             <Switch
               value={config.sonidoOperaciones}
               onValueChange={(v) => updateToggle('sonidoOperaciones', v)}
-              trackColor={{ false: '#e0e0e0', true: BrandColors.primary }}
+              trackColor={{ false: isDark ? '#334155' : '#e0e0e0', true: '#34C759' }}
               thumbColor={isDark ? '#f4f3f4' : '#fff'}
             />
           </View>

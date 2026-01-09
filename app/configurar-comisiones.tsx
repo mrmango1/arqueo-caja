@@ -260,12 +260,13 @@ export default function ConfigurarComisionesScreen() {
                 options={{
                     title: isEditingDefault ? 'Comisiones por Defecto' : (canal?.nombre || 'Comisiones'),
                     headerStyle: { backgroundColor: colors.background },
-                    headerTintColor: BrandColors.primary,
+                    headerTintColor: colors.text,
+                    headerTitleStyle: { color: colors.text },
                     headerShadowVisible: false,
                     headerBackTitle: 'Atrás',
                     headerRight: () => hasChanges ? (
                         <TouchableOpacity onPress={handleSave}>
-                            <Text style={{ color: BrandColors.primary, fontSize: 17, fontWeight: '600' }}>Guardar</Text>
+                            <Text style={{ color: '#007AFF', fontSize: 17, fontWeight: '600' }}>Guardar</Text>
                         </TouchableOpacity>
                     ) : null,
                 }}
@@ -337,9 +338,10 @@ export default function ConfigurarComisionesScreen() {
                                 <View style={[
                                     styles.modoRadio,
                                     isDark && styles.modoRadioDark,
-                                    config.modo === 'simple' && styles.modoRadioActive
+                                    config.modo === 'simple' && styles.modoRadioActive,
+                                    config.modo === 'simple' && isDark && styles.modoRadioActiveDark
                                 ]}>
-                                    {config.modo === 'simple' && <View style={styles.modoRadioDot} />}
+                                    {config.modo === 'simple' && <View style={[styles.modoRadioDot, isDark && styles.modoRadioDotDark]} />}
                                 </View>
                                 <View style={styles.modoContent}>
                                     <Text style={[styles.modoTitle, isDark && styles.textDark]}>
@@ -365,9 +367,10 @@ export default function ConfigurarComisionesScreen() {
                                 <View style={[
                                     styles.modoRadio,
                                     isDark && styles.modoRadioDark,
-                                    config.modo === 'rangos' && styles.modoRadioActive
+                                    config.modo === 'rangos' && styles.modoRadioActive,
+                                    config.modo === 'rangos' && isDark && styles.modoRadioActiveDark
                                 ]}>
-                                    {config.modo === 'rangos' && <View style={styles.modoRadioDot} />}
+                                    {config.modo === 'rangos' && <View style={[styles.modoRadioDot, isDark && styles.modoRadioDotDark]} />}
                                 </View>
                                 <View style={styles.modoContent}>
                                     <Text style={[styles.modoTitle, isDark && styles.textDark]}>
@@ -397,7 +400,7 @@ export default function ConfigurarComisionesScreen() {
                                             </Text>
                                         </View>
                                         <View style={[styles.simpleInputWrapper, isDark && styles.simpleInputWrapperDark]}>
-                                            <Text style={styles.simpleCurrency}>$</Text>
+                                            <Text style={[styles.simpleCurrency, isDark && styles.simpleCurrencyDark]}>$</Text>
                                             <TextInput
                                                 style={[styles.simpleInput, isDark && styles.textDark]}
                                                 value={config.comisionSimple.comisionDeposito.toString()}
@@ -421,7 +424,7 @@ export default function ConfigurarComisionesScreen() {
                                             </Text>
                                         </View>
                                         <View style={[styles.simpleInputWrapper, isDark && styles.simpleInputWrapperDark]}>
-                                            <Text style={styles.simpleCurrency}>$</Text>
+                                            <Text style={[styles.simpleCurrency, isDark && styles.simpleCurrencyDark]}>$</Text>
                                             <TextInput
                                                 style={[styles.simpleInput, isDark && styles.textDark]}
                                                 value={config.comisionSimple.comisionRetiro.toString()}
@@ -610,13 +613,19 @@ const styles = StyleSheet.create({
         borderColor: '#555',
     },
     modoRadioActive: {
-        borderColor: BrandColors.primary,
+        borderColor: BrandColors.primary, // Dark color for light mode
+    },
+    modoRadioActiveDark: {
+        borderColor: '#F8FAFC', // Light color for dark mode
     },
     modoRadioDot: {
         width: 12,
         height: 12,
         borderRadius: 6,
-        backgroundColor: BrandColors.primary,
+        backgroundColor: BrandColors.primary, // Dark color for light mode
+    },
+    modoRadioDotDark: {
+        backgroundColor: '#F8FAFC', // Light color for dark mode
     },
     modoContent: {
         flex: 1,
@@ -681,7 +690,10 @@ const styles = StyleSheet.create({
     simpleCurrency: {
         fontSize: 18,
         fontWeight: '600',
-        color: BrandColors.primary,
+        color: '#64748B', // Slate 500 - visible on both light and dark
+    },
+    simpleCurrencyDark: {
+        color: '#F8FAFC', // Light color for dark mode
     },
     simpleInput: {
         fontSize: 18,
@@ -786,17 +798,24 @@ const styles = StyleSheet.create({
     infoCard: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        backgroundColor: '#F8FAFC', // Slate 50
+        backgroundColor: '#fff',
         borderRadius: 14,
         padding: 16,
         gap: 12,
         borderWidth: 1,
-        borderColor: 'rgba(15, 23, 42, 0.1)',
+        borderColor: 'rgba(15, 23, 42, 0.08)',
         marginBottom: 16,
+        // Shadow for better visibility
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 1,
     },
     infoCardDark: {
-        backgroundColor: '#0F172A', // Slate 900
+        backgroundColor: '#1E293B', // Slate 800
         borderColor: 'rgba(148, 163, 184, 0.2)',
+        shadowOpacity: 0,
     },
     infoText: {
         flex: 1,

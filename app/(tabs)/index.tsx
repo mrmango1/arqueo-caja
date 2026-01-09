@@ -292,7 +292,7 @@ export default function HomeScreen() {
           style={[styles.closeButton, { backgroundColor: colors.surface }]}
           activeOpacity={0.7}
         >
-          <IconSymbol size={16} name="lock.fill" color={BrandColors.primary} />
+          <IconSymbol size={16} name="lock.fill" color={isDark ? '#F8FAFC' : BrandColors.primary} />
         </TouchableOpacity>
       </Animated.View>
 

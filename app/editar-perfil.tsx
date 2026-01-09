@@ -105,20 +105,21 @@ export default function EditarPerfilScreen() {
             <Stack.Screen options={{
                 title: 'Editar Perfil',
                 headerStyle: { backgroundColor: colors.background },
-                headerTintColor: BrandColors.primary,
+                headerTintColor: colors.text,
+                headerTitleStyle: { color: colors.text },
                 headerShadowVisible: false,
                 headerLeft: () => (
                     <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: -8 }}>
-                        <IconSymbol size={28} name="chevron.left" color={BrandColors.primary} />
-                        <Text style={{ color: BrandColors.primary, fontSize: 17, marginLeft: -4 }}>Atrás</Text>
+                        <IconSymbol size={28} name="chevron.left" color="#007AFF" />
+                        <Text style={{ color: '#007AFF', fontSize: 17, marginLeft: -4 }}>Atrás</Text>
                     </TouchableOpacity>
                 ),
                 headerRight: () => (
                     <TouchableOpacity onPress={handleSave} disabled={saving}>
                         {saving ? (
-                            <ActivityIndicator size="small" color={BrandColors.primary} />
+                            <ActivityIndicator size="small" color="#007AFF" />
                         ) : (
-                            <Text style={{ fontSize: 17, fontWeight: '600', color: BrandColors.primary }}>Guardar</Text>
+                            <Text style={{ fontSize: 17, fontWeight: '600', color: '#007AFF' }}>Guardar</Text>
                         )}
                     </TouchableOpacity>
                 )

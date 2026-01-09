@@ -365,7 +365,7 @@ export default function HistorialScreen() {
                       {headerTitle}
                     </Text>
                     {!isSingleItem && (
-                      <Text style={{ fontSize: 12, color: BrandColors.primary, fontWeight: '600' }}>
+                      <Text style={{ fontSize: 12, color: isDark ? '#60A5FA' : BrandColors.primary, fontWeight: '600' }}>
                         {isExpanded ? 'Ver menos' : 'Ver todo'}
                       </Text>
                     )}

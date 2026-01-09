@@ -135,7 +135,7 @@ export default function OnboardingScreen() {
                             <Switch
                                 value={canal.activo}
                                 onValueChange={() => toggleCanal(canal.id)}
-                                trackColor={{ false: '#767577', true: BrandColors.primary }}
+                                trackColor={{ false: isDark ? '#334155' : '#767577', true: '#34C759' }}
                                 thumbColor={isDark ? '#f4f3f4' : '#fff'}
                             />
                         </View>

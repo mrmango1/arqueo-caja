@@ -183,11 +183,11 @@ export default function DetalleCajaScreen() {
                         </View>
 
                         <View style={styles.balanceItem}>
-                            <View style={[styles.iconBg, { backgroundColor: 'rgba(15, 23, 42, 0.1)' }]}>
-                                <IconSymbol size={20} name="dollarsign" color={BrandColors.primary} />
+                            <View style={[styles.iconBg, { backgroundColor: isDark ? 'rgba(248, 250, 252, 0.1)' : 'rgba(15, 23, 42, 0.1)' }]}>
+                                <IconSymbol size={20} name="dollarsign" color={isDark ? '#F8FAFC' : BrandColors.primary} />
                             </View>
                             <Text style={styles.balanceLabel}>Ganancia</Text>
-                            <Text style={[styles.balanceValue, { color: BrandColors.primary }]}>
+                            <Text style={[styles.balanceValue, { color: isDark ? '#34C759' : BrandColors.primary }]}>
                                 +${(caja.totalComisiones || 0).toFixed(2)}
                             </Text>
                         </View>

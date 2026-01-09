@@ -732,5 +732,7 @@ const styles = StyleSheet.create({
     padding: Spacing.base,
     fontSize: 15,
     minHeight: 80,
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.3)', // Visible border
   },
 });
