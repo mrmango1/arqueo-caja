@@ -306,7 +306,7 @@ export default function NuevaOperacionScreen() {
                                 style={[
                                     styles.categoryCard,
                                     {
-                                        backgroundColor: isDark ? '#1c1c1e' : '#fff',
+                                        backgroundColor: colors.surface,
                                         shadowColor: '#000',
                                         shadowOffset: { width: 0, height: 2 },
                                         shadowOpacity: 0.10,
@@ -321,7 +321,7 @@ export default function NuevaOperacionScreen() {
                                 <View style={styles.categoryIcon}>
                                     <IconSymbol size={28} name={cat.icono} color={cat.color} />
                                 </View>
-                                <Text style={[styles.categoryName, isDark && styles.textDark]}>
+                                <Text style={[styles.categoryName, { color: colors.text }]}>
                                     {cat.nombreCorto}
                                 </Text>
                             </TouchableOpacity>
@@ -348,7 +348,7 @@ export default function NuevaOperacionScreen() {
                                 style={[
                                     styles.categoryCard,
                                     {
-                                        backgroundColor: isDark ? '#1c1c1e' : '#fff',
+                                        backgroundColor: colors.surface,
                                         shadowColor: '#000',
                                         shadowOffset: { width: 0, height: 2 },
                                         shadowOpacity: 0.10,
@@ -363,7 +363,7 @@ export default function NuevaOperacionScreen() {
                                 <View style={styles.categoryIcon}>
                                     <IconSymbol size={28} name={cat.icono} color={cat.color} />
                                 </View>
-                                <Text style={[styles.categoryName, isDark && styles.textDark]}>
+                                <Text style={[styles.categoryName, { color: colors.text }]}>
                                     {cat.nombreCorto}
                                 </Text>
                             </TouchableOpacity>
@@ -433,12 +433,12 @@ export default function NuevaOperacionScreen() {
             >
                 {/* Input de monto */}
                 <Animated.View entering={FadeInUp.delay(100).springify()}>
-                    <View style={[styles.amountCard, isDark && styles.cardDark, Shadows.md]}>
-                        <Text style={[styles.amountLabel, isDark && styles.textDarkSecondary]}>Monto de la operación</Text>
-                        <View style={[styles.amountInputWrapper, { borderColor: primaryColor }, isDark && { backgroundColor: '#2c2c2e' }]}>
+                    <View style={[styles.amountCard, { backgroundColor: colors.surface }, Shadows.md]}>
+                        <Text style={[styles.amountLabel, { color: colors.textSecondary }]}>Monto de la operación</Text>
+                        <View style={[styles.amountInputWrapper, { borderColor: primaryColor, backgroundColor: colors.inputBackground }]}>
                             <Text style={[styles.amountCurrency, { color: primaryColor }]}>$</Text>
                             <TextInput
-                                style={[styles.amountInput, isDark && styles.textDark]}
+                                style={[styles.amountInput, { color: colors.text }]}
                                 placeholder="0.00"
                                 placeholderTextColor={isDark ? '#555' : '#ccc'}
                                 value={monto}
@@ -452,30 +452,30 @@ export default function NuevaOperacionScreen() {
 
                 {/* Formulario */}
                 <Animated.View entering={FadeInUp.delay(200).springify()}>
-                    <View style={[styles.formCard, isDark && styles.cardDark, Shadows.sm]}>
+                    <View style={[styles.formCard, { backgroundColor: colors.surface }, Shadows.sm]}>
                         {/* Canal de transacción */}
                         {categoriaActual?.requiereBanco && (
                             <View style={styles.formGroup}>
                                 <View style={styles.labelRow}>
-                                    <IconSymbol size={16} name="building.columns" color={isDark ? '#666' : '#999'} />
-                                    <Text style={[styles.formLabel, isDark && styles.textDark]}>Canal de Transacción</Text>
+                                    <IconSymbol size={16} name="building.columns" color={colors.textSecondary} />
+                                    <Text style={[styles.formLabel, { color: colors.text }]}>Canal de Transacción</Text>
                                     <View style={styles.requiredBadge}>
                                         <Text style={styles.requiredText}>REQUERIDO</Text>
                                     </View>
                                 </View>
                                 <TouchableOpacity
-                                    style={[styles.selectButton, isDark && styles.selectButtonDark]}
+                                    style={[styles.selectButton, { backgroundColor: colors.backgroundTertiary }]}
                                     onPress={handleShowCanalesSelector}
                                     activeOpacity={0.7}
                                 >
                                     <Text style={[
                                         styles.selectButtonText,
                                         !banco && styles.selectButtonPlaceholder,
-                                        isDark && banco && styles.textDark
+                                        { color: banco ? colors.text : colors.textSecondary }
                                     ]}>
                                         {banco || 'Seleccionar canal'}
                                     </Text>
-                                    <View style={styles.selectArrowBox}>
+                                    <View style={[styles.selectArrowBox, isDark && styles.selectArrowBoxDark]}>
                                         <IconSymbol size={16} name="chevron.down" color="#999" />
                                     </View>
                                 </TouchableOpacity>
@@ -486,13 +486,13 @@ export default function NuevaOperacionScreen() {
                         {categoriaActual?.requiereReferencia && (
                             <View style={styles.formGroup}>
                                 <View style={styles.labelRow}>
-                                    <IconSymbol size={16} name="number" color={isDark ? '#666' : '#999'} />
-                                    <Text style={[styles.formLabel, isDark && styles.textDark]}>
+                                    <IconSymbol size={16} name="number" color={colors.textSecondary} />
+                                    <Text style={[styles.formLabel, { color: colors.text }]}>
                                         N° Referencia / Comprobante
                                     </Text>
                                 </View>
                                 <TextInput
-                                    style={[styles.textInputField, isDark && styles.textInputFieldDark]}
+                                    style={[styles.textInputField, { backgroundColor: colors.backgroundTertiary, color: colors.text }]}
                                     placeholder="Ej: 123456789"
                                     placeholderTextColor={isDark ? '#555' : '#aaa'}
                                     value={referencia}
@@ -505,18 +505,18 @@ export default function NuevaOperacionScreen() {
                         {/* Comisión */}
                         <View style={styles.formGroup}>
                             <View style={styles.labelRow}>
-                                <IconSymbol size={16} name="dollarsign.circle" color={BrandColors.primary} />
-                                <Text style={[styles.formLabel, isDark && styles.textDark]}>
+                                <IconSymbol size={16} name="dollarsign.circle" color={isDark ? '#F8FAFC' : BrandColors.primary} />
+                                <Text style={[styles.formLabel, { color: colors.text }]}>
                                     Comisión cobrada
                                 </Text>
-                                <View style={styles.optionalBadge}>
+                                <View style={[styles.optionalBadge, isDark && styles.optionalBadgeDark]}>
                                     <Text style={styles.optionalText}>TU GANANCIA</Text>
                                 </View>
                             </View>
-                            <View style={[styles.comisionWrapper, isDark && styles.comisionWrapperDark]}>
-                                <Text style={styles.comisionCurrency}>$</Text>
+                            <View style={[styles.comisionWrapper, { backgroundColor: colors.backgroundTertiary, borderColor: colors.border }]}>
+                                <Text style={[styles.comisionCurrency, { color: isDark ? '#F8FAFC' : BrandColors.primary }]}>$</Text>
                                 <TextInput
-                                    style={[styles.comisionInput, isDark && styles.textDark]}
+                                    style={[styles.comisionInput, { color: colors.text }]}
                                     placeholder="0.00"
                                     placeholderTextColor={isDark ? '#555' : '#bbb'}
                                     value={comision}
@@ -525,7 +525,7 @@ export default function NuevaOperacionScreen() {
                                     editable={!loading}
                                 />
                             </View>
-                            <Text style={[styles.helperText, isDark && styles.textDarkSecondary]}>
+                            <Text style={[styles.helperText, { color: colors.textSecondary }]}>
                                 Esta cantidad se sumará a tu saldo en caja
                             </Text>
                         </View>
@@ -533,14 +533,14 @@ export default function NuevaOperacionScreen() {
                         {/* Notas */}
                         <View style={[styles.formGroup, { marginBottom: 0 }]}>
                             <View style={styles.labelRow}>
-                                <IconSymbol size={16} name="note.text" color={isDark ? '#666' : '#999'} />
-                                <Text style={[styles.formLabel, isDark && styles.textDark]}>Notas</Text>
-                                <View style={styles.optionalBadge}>
+                                <IconSymbol size={16} name="note.text" color={colors.textSecondary} />
+                                <Text style={[styles.formLabel, { color: colors.text }]}>Notas</Text>
+                                <View style={[styles.optionalBadge, isDark && styles.optionalBadgeDark]}>
                                     <Text style={styles.optionalText}>OPCIONAL</Text>
                                 </View>
                             </View>
                             <TextInput
-                                style={[styles.textAreaField, isDark && styles.textInputFieldDark]}
+                                style={[styles.textAreaField, { backgroundColor: colors.backgroundTertiary, color: colors.text }]}
                                 placeholder="Observaciones adicionales..."
                                 placeholderTextColor={isDark ? '#555' : '#aaa'}
                                 value={notas}
@@ -633,9 +633,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         alignItems: 'center',
     },
-    cardDark: {
-        backgroundColor: '#1c1c1e',
-    },
+    // cardDark is no longer used - colors.surface is applied directly
     categoryIcon: {
         width: 48,
         height: 48,
@@ -725,6 +723,9 @@ const styles = StyleSheet.create({
         paddingVertical: 3,
         borderRadius: 6,
     },
+    optionalBadgeDark: {
+        backgroundColor: '#1E293B',
+    },
     optionalText: {
         fontSize: 9,
         fontWeight: '700',
@@ -742,7 +743,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
     selectButtonDark: {
-        backgroundColor: '#2c2c2e',
+        backgroundColor: '#1E293B', // Slate 800 - matches colors.backgroundTertiary
     },
     selectButtonText: {
         fontSize: 16,
@@ -759,6 +760,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    selectArrowBoxDark: {
+        backgroundColor: '#334155', // Slate 700
+    },
 
     // Text inputs
     textInputField: {
@@ -770,7 +774,7 @@ const styles = StyleSheet.create({
         color: '#000',
     },
     textInputFieldDark: {
-        backgroundColor: '#2c2c2e',
+        backgroundColor: '#1E293B', // Slate 800 - matches colors.backgroundTertiary
         color: '#fff',
     },
     textAreaField: {
@@ -854,7 +858,7 @@ const styles = StyleSheet.create({
         maxHeight: height * 0.7,
     },
     modalContentDark: {
-        backgroundColor: '#1c1c1e',
+        backgroundColor: '#0F172A', // Slate 900 - matches colors.surface
     },
     modalHandle: {
         width: 36,

@@ -163,21 +163,21 @@ export default function AbrirCajaScreen() {
       >
         {/* Saludo */}
         <View style={styles.greetingSection}>
-          <Text style={[styles.greeting, isDark && styles.textDark]}>{getGreeting()}</Text>
-          <Text style={[styles.greetingSubtext, isDark && styles.textDarkSecondary]}>
+          <Text style={[styles.greeting, { color: colors.text }]}>{getGreeting()}</Text>
+          <Text style={[styles.greetingSubtext, { color: colors.textSecondary }]}>
             Ingresa el efectivo con el que inicias tu jornada
           </Text>
         </View>
 
         {/* Input de monto principal */}
-        <View style={[styles.amountCard, isDark && styles.cardDark]}>
-          <Text style={[styles.amountLabel, isDark && styles.textDarkSecondary]}>
+        <View style={[styles.amountCard, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.amountLabel, { color: colors.textSecondary }]}>
             Efectivo Inicial en Caja
           </Text>
-          <View style={[styles.amountInputWrapper, isDark && styles.amountInputWrapperDark]}>
+          <View style={[styles.amountInputWrapper, { backgroundColor: colors.inputBackground }]}>
             <Text style={styles.currencySymbol}>$</Text>
             <TextInput
-              style={[styles.amountInput, isDark && styles.textDark]}
+              style={[styles.amountInput, { color: colors.text }]}
               placeholder="0.00"
               placeholderTextColor={isDark ? '#444' : '#ccc'}
               value={montoInicial}
@@ -191,32 +191,32 @@ export default function AbrirCajaScreen() {
 
         {/* Saldos por canal - Siempre visible */}
 
-        <View style={[styles.canalesCard, isDark && styles.cardDark]}>
-          <View style={styles.canalesHeader}>
-            <Text style={[styles.canalesTitle, isDark && styles.textDark]}>
+        <View style={[styles.canalesCard, { backgroundColor: colors.surface }]}>
+          <View style={[styles.canalesHeader, { borderBottomColor: colors.borderLight }]}>
+            <Text style={[styles.canalesTitle, { color: colors.text }]}>
               Saldos en Canales de Transacción
             </Text>
-            <Text style={[styles.canalesSubtitle, isDark && styles.textDarkSecondary]}>
+            <Text style={[styles.canalesSubtitle, { color: colors.textSecondary }]}>
               Ingresa el saldo disponible en cada cuenta
             </Text>
           </View>
 
           {canalesActivos.map((canal, index) => (
             <View key={canal.id}>
-              {index > 0 && <View style={[styles.divider, isDark && styles.dividerDark]} />}
+              {index > 0 && <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />}
               <View style={styles.canalInputRow}>
                 <View style={styles.canalInfo}>
-                  <View style={[styles.canalIcon, { backgroundColor: 'rgba(15, 23, 42, 0.1)' }]}>
-                    <IconSymbol size={16} name="building.columns" color={BrandColors.primary} />
+                  <View style={[styles.canalIcon, { backgroundColor: isDark ? 'rgba(248, 250, 252, 0.1)' : 'rgba(15, 23, 42, 0.1)' }]}>
+                    <IconSymbol size={16} name="building.columns" color={isDark ? '#F8FAFC' : BrandColors.primary} />
                   </View>
-                  <Text style={[styles.canalName, isDark && styles.textDark]} numberOfLines={1}>
+                  <Text style={[styles.canalName, { color: colors.text }]} numberOfLines={1}>
                     {canal.nombre}
                   </Text>
                 </View>
-                <View style={[styles.canalInputWrapper, isDark && styles.canalInputWrapperDark]}>
+                <View style={[styles.canalInputWrapper, { backgroundColor: colors.backgroundTertiary }]}>
                   <Text style={styles.canalCurrency}>$</Text>
                   <TextInput
-                    style={[styles.canalInput, isDark && styles.textDark]}
+                    style={[styles.canalInput, { color: colors.text }]}
                     placeholder="0.00"
                     placeholderTextColor={isDark ? '#555' : '#bbb'}
                     value={saldosCanales[canal.id] || ''}
@@ -229,10 +229,10 @@ export default function AbrirCajaScreen() {
             </View>
           ))}
 
-          <View style={[styles.divider, isDark && styles.dividerDark]} />
+          <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
 
-          <View style={styles.totalRow}>
-            <Text style={[styles.totalLabel, isDark && styles.textDark]}>
+          <View style={[styles.totalRow, { backgroundColor: isDark ? colors.backgroundSecondary : 'rgba(15, 23, 42, 0.05)' }]}>
+            <Text style={[styles.totalLabel, { color: colors.text }]}>
               Total en Canales
             </Text>
             <Text style={styles.totalValue}>
@@ -243,16 +243,16 @@ export default function AbrirCajaScreen() {
 
 
         {/* Card de notas */}
-        <View style={[styles.notesCard, isDark && styles.cardDark]}>
+        <View style={[styles.notesCard, { backgroundColor: colors.surface }]}>
           <View style={styles.notesHeader}>
-            <IconSymbol size={16} name="note.text" color={isDark ? '#666' : '#999'} />
-            <Text style={[styles.notesLabel, isDark && styles.textDark]}>Notas</Text>
-            <View style={styles.optionalBadge}>
-              <Text style={styles.optionalText}>OPCIONAL</Text>
+            <IconSymbol size={16} name="note.text" color={colors.textSecondary} />
+            <Text style={[styles.notesLabel, { color: colors.text }]}>Notas</Text>
+            <View style={[styles.optionalBadge, { backgroundColor: colors.backgroundTertiary }]}>
+              <Text style={[styles.optionalText, { color: colors.textSecondary }]}>OPCIONAL</Text>
             </View>
           </View>
           <TextInput
-            style={[styles.notesInput, isDark && styles.notesInputDark]}
+            style={[styles.notesInput, { backgroundColor: colors.backgroundTertiary, color: colors.text }]}
             placeholder="Ej: Turno mañana, efectivo contado..."
             placeholderTextColor={isDark ? '#555' : '#aaa'}
             value={notas}
@@ -265,9 +265,9 @@ export default function AbrirCajaScreen() {
         </View>
 
         {/* Info card */}
-        <View style={[styles.infoCard, isDark && styles.infoCardDark]}>
-          <IconSymbol size={18} name="info.circle.fill" color={BrandColors.primary} />
-          <Text style={[styles.infoText, isDark && styles.textDarkSecondary]}>
+        <View style={[styles.infoCard, { backgroundColor: colors.backgroundTertiary, borderColor: colors.border }]}>
+          <IconSymbol size={18} name="info.circle.fill" color={isDark ? '#F8FAFC' : BrandColors.primary} />
+          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
             Cuenta físicamente todo el dinero antes de iniciar. Este monto será tu referencia para el arqueo.
           </Text>
         </View>
@@ -290,8 +290,8 @@ export default function AbrirCajaScreen() {
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </ScrollView >
+    </KeyboardAvoidingView >
   );
 }
 
@@ -335,9 +335,7 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 16,
   },
-  cardDark: {
-    backgroundColor: '#1c1c1e',
-  },
+  // cardDark is no longer used - colors.surface is applied directly
   amountLabel: {
     fontSize: 13,
     fontWeight: '600',
@@ -356,7 +354,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   amountInputWrapperDark: {
-    backgroundColor: '#2c2c2e',
+    backgroundColor: '#1E293B', // Slate 800 - matches colors.backgroundTertiary
     borderColor: BrandColors.primary,
   },
   currencySymbol: {
@@ -478,7 +476,7 @@ const styles = StyleSheet.create({
     width: 110,
   },
   canalInputWrapperDark: {
-    backgroundColor: '#2c2c2e',
+    backgroundColor: '#1E293B', // Slate 800 - matches colors.backgroundTertiary
   },
   canalCurrency: {
     fontSize: 16,
@@ -517,7 +515,7 @@ const styles = StyleSheet.create({
     marginLeft: 58,
   },
   dividerDark: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#1E293B', // Slate 800 - matches colors.border
   },
 
   // Notes card
@@ -560,7 +558,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   notesInputDark: {
-    backgroundColor: '#2c2c2e',
+    backgroundColor: '#1E293B', // Slate 800 - matches colors.backgroundTertiary
     color: '#fff',
   },
 

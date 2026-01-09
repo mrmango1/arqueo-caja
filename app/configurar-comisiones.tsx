@@ -328,13 +328,15 @@ export default function ConfigurarComisionesScreen() {
                             <TouchableOpacity
                                 style={[
                                     styles.modoOption,
-                                    config.modo === 'simple' && styles.modoOptionActive
+                                    config.modo === 'simple' && styles.modoOptionActive,
+                                    config.modo === 'simple' && isDark && styles.modoOptionActiveDark
                                 ]}
                                 onPress={() => handleChangeModo('simple')}
                                 activeOpacity={0.7}
                             >
                                 <View style={[
                                     styles.modoRadio,
+                                    isDark && styles.modoRadioDark,
                                     config.modo === 'simple' && styles.modoRadioActive
                                 ]}>
                                     {config.modo === 'simple' && <View style={styles.modoRadioDot} />}
@@ -354,13 +356,15 @@ export default function ConfigurarComisionesScreen() {
                             <TouchableOpacity
                                 style={[
                                     styles.modoOption,
-                                    config.modo === 'rangos' && styles.modoOptionActive
+                                    config.modo === 'rangos' && styles.modoOptionActive,
+                                    config.modo === 'rangos' && isDark && styles.modoOptionActiveDark
                                 ]}
                                 onPress={() => handleChangeModo('rangos')}
                                 activeOpacity={0.7}
                             >
                                 <View style={[
                                     styles.modoRadio,
+                                    isDark && styles.modoRadioDark,
                                     config.modo === 'rangos' && styles.modoRadioActive
                                 ]}>
                                     {config.modo === 'rangos' && <View style={styles.modoRadioDot} />}
@@ -535,7 +539,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     cardDark: {
-        backgroundColor: '#1c1c1e',
+        backgroundColor: '#0F172A', // Slate 900 - matches colors.surface
     },
     toggleLeft: {
         flexDirection: 'row',
@@ -590,6 +594,9 @@ const styles = StyleSheet.create({
     modoOptionActive: {
         backgroundColor: 'rgba(15, 23, 42, 0.05)',
     },
+    modoOptionActiveDark: {
+        backgroundColor: 'rgba(248, 250, 252, 0.05)',
+    },
     modoRadio: {
         width: 22,
         height: 22,
@@ -598,6 +605,9 @@ const styles = StyleSheet.create({
         borderColor: '#ccc',
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    modoRadioDark: {
+        borderColor: '#555',
     },
     modoRadioActive: {
         borderColor: BrandColors.primary,
@@ -666,7 +676,7 @@ const styles = StyleSheet.create({
         minWidth: 100,
     },
     simpleInputWrapperDark: {
-        backgroundColor: '#2c2c2e',
+        backgroundColor: '#1E293B', // Slate 800 - matches colors.backgroundTertiary
     },
     simpleCurrency: {
         fontSize: 18,
@@ -705,8 +715,8 @@ const styles = StyleSheet.create({
         borderBottomColor: '#e5e5e5',
     },
     tableHeaderDark: {
-        backgroundColor: '#2c2c2e',
-        borderBottomColor: '#3a3a3a',
+        backgroundColor: '#1E293B', // Slate 800 - matches colors.backgroundTertiary
+        borderBottomColor: '#334155', // Slate 700
     },
     tableHeaderText: {
         fontSize: 11,
@@ -812,7 +822,7 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     modalContentDark: {
-        backgroundColor: '#1c1c1e',
+        backgroundColor: '#0F172A', // Slate 900 - matches colors.surface
     },
     modalHandle: {
         width: 36,
@@ -855,7 +865,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
     },
     modalInputWrapperDark: {
-        backgroundColor: '#2c2c2e',
+        backgroundColor: '#1E293B', // Slate 800 - matches colors.backgroundTertiary
     },
     modalCurrency: {
         fontSize: 16,
@@ -899,7 +909,7 @@ const styles = StyleSheet.create({
     },
 
     dividerDark: {
-        backgroundColor: '#2a2a2a',
+        backgroundColor: '#1E293B', // Slate 800 - matches colors.border
     },
     textDark: {
         color: '#fff',

@@ -147,14 +147,14 @@ export default function EstadisticasScreen() {
     }, [cajasCerradas]);
 
     const chartConfig = {
-        backgroundColor: isDark ? '#1c1c1e' : '#ffffff',
-        backgroundGradientFrom: isDark ? '#1c1c1e' : '#ffffff',
-        backgroundGradientTo: isDark ? '#1c1c1e' : '#ffffff',
+        backgroundColor: isDark ? colors.surface : '#ffffff',
+        backgroundGradientFrom: isDark ? colors.surface : '#ffffff',
+        backgroundGradientTo: isDark ? colors.surface : '#ffffff',
         decimalPlaces: 0,
-        color: (opacity = 1) => `rgba(15, 23, 42, ${opacity})`, // Slate 900
-        labelColor: (opacity = 1) => isDark ? `rgba(255, 255, 255, ${opacity})` : `rgba(102, 102, 102, ${opacity})`,
-        propsForDots: { r: '4', strokeWidth: '0', stroke: BrandColors.primary },
-        fillShadowGradient: BrandColors.primary,
+        color: (opacity = 1) => isDark ? `rgba(248, 250, 252, ${opacity})` : `rgba(15, 23, 42, ${opacity})`, // Theme text colors
+        labelColor: (opacity = 1) => isDark ? `rgba(248, 250, 252, ${opacity})` : `rgba(102, 102, 102, ${opacity})`,
+        propsForDots: { r: '4', strokeWidth: '0', stroke: isDark ? '#F8FAFC' : BrandColors.primary },
+        fillShadowGradient: isDark ? '#F8FAFC' : BrandColors.primary,
         fillShadowGradientOpacity: 0.2,
     };
 
@@ -181,38 +181,38 @@ export default function EstadisticasScreen() {
             >
                 {/* KPIs Grid */}
                 <View style={styles.kpiGrid}>
-                    <View style={[styles.kpiCardMain, isDark && styles.cardDark]}>
+                    <View style={[styles.kpiCardMain, { backgroundColor: colors.surface }]}>
                         <View>
-                            <Text style={styles.kpiLabel}>Ganancias Totales</Text>
-                            <Text style={styles.kpiValueMain}>${stats.totalComisiones.toFixed(0)}</Text>
+                            <Text style={[styles.kpiLabel, { color: colors.textSecondary }]}>Ganancias Totales</Text>
+                            <Text style={[styles.kpiValueMain, isDark && { color: '#10B981' }]}>${stats.totalComisiones.toFixed(0)}</Text>
                         </View>
-                        <View style={[styles.kpiIcon, { backgroundColor: 'rgba(15, 23, 42, 0.1)' }]}>
-                            <IconSymbol size={24} name="dollarsign" color={BrandColors.primary} />
+                        <View style={[styles.kpiIcon, { backgroundColor: isDark ? 'rgba(248, 250, 252, 0.1)' : 'rgba(15, 23, 42, 0.1)' }]}>
+                            <IconSymbol size={24} name="dollarsign" color={isDark ? '#F8FAFC' : BrandColors.primary} />
                         </View>
                     </View>
 
                     <View style={styles.subKpiRow}>
-                        <View style={[styles.kpiCardSmall, isDark && styles.cardDark]}>
+                        <View style={[styles.kpiCardSmall, { backgroundColor: colors.surface }]}>
                             <View style={[styles.kpiIconSmall, { backgroundColor: '#007AFF15' }]}>
                                 <IconSymbol size={18} name="number" color="#007AFF" />
                             </View>
-                            <Text style={[styles.kpiValueSmall, isDark && styles.textDark]}>{stats.totalOperaciones}</Text>
-                            <Text style={styles.kpiLabelSmall}>Operaciones</Text>
+                            <Text style={[styles.kpiValueSmall, { color: colors.text }]}>{stats.totalOperaciones}</Text>
+                            <Text style={[styles.kpiLabelSmall, { color: colors.textSecondary }]}>Operaciones</Text>
                         </View>
-                        <View style={[styles.kpiCardSmall, isDark && styles.cardDark]}>
+                        <View style={[styles.kpiCardSmall, { backgroundColor: colors.surface }]}>
                             <View style={[styles.kpiIconSmall, { backgroundColor: '#34C75915' }]}>
                                 <IconSymbol size={18} name="chart.line.uptrend.xyaxis" color="#34C759" />
                             </View>
-                            <Text style={[styles.kpiValueSmall, isDark && styles.textDark]}>${stats.promedioComisionDiario.toFixed(0)}</Text>
-                            <Text style={styles.kpiLabelSmall}>Promedio/Día</Text>
+                            <Text style={[styles.kpiValueSmall, { color: colors.text }]}>${stats.promedioComisionDiario.toFixed(0)}</Text>
+                            <Text style={[styles.kpiLabelSmall, { color: colors.textSecondary }]}>Promedio/Día</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Gráfico 1: Comisiones */}
-                <View style={[styles.chartCard, isDark && styles.cardDark]}>
+                <View style={[styles.chartCard, { backgroundColor: colors.surface }]}>
                     <View style={styles.chartHeader}>
-                        <Text style={[styles.chartTitle, isDark && styles.textDark]}>Comisiones (7 días)</Text>
+                        <Text style={[styles.chartTitle, { color: colors.text }]}>Comisiones (7 días)</Text>
                     </View>
                     {cajasCerradas.length > 0 ? (
                         <BarChart
@@ -236,25 +236,25 @@ export default function EstadisticasScreen() {
                 </View>
 
                 {/* Resumen de Movimientos (Barras de progreso) */}
-                <View style={[styles.chartCard, isDark && styles.cardDark]}>
-                    <Text style={[styles.chartTitle, isDark && styles.textDark, { marginBottom: 16 }]}>Flujo de Caja</Text>
+                <View style={[styles.chartCard, { backgroundColor: colors.surface }]}>
+                    <Text style={[styles.chartTitle, { color: colors.text }, { marginBottom: 16 }]}>Flujo de Caja</Text>
 
                     <View style={styles.flowItem}>
                         <View style={styles.flowHeader}>
-                            <Text style={[styles.flowLabel, isDark && styles.textDarkSecondary]}>Ingresos</Text>
+                            <Text style={[styles.flowLabel, { color: colors.textSecondary }]}>Ingresos</Text>
                             <Text style={[styles.flowValue, { color: '#34C759' }]}>${(stats.totalDepositos / 1000).toFixed(1)}k</Text>
                         </View>
-                        <View style={styles.progressBarBg}>
+                        <View style={[styles.progressBarBg, { backgroundColor: isDark ? colors.backgroundTertiary : '#f0f0f0' }]}>
                             <View style={[styles.progressBarFill, { width: '100%', backgroundColor: '#34C759' }]} />
                         </View>
                     </View>
 
                     <View style={[styles.flowItem, { marginTop: 16 }]}>
                         <View style={styles.flowHeader}>
-                            <Text style={[styles.flowLabel, isDark && styles.textDarkSecondary]}>Egresos</Text>
+                            <Text style={[styles.flowLabel, { color: colors.textSecondary }]}>Egresos</Text>
                             <Text style={[styles.flowValue, { color: '#FF3B30' }]}>${(stats.totalRetiros / 1000).toFixed(1)}k</Text>
                         </View>
-                        <View style={styles.progressBarBg}>
+                        <View style={[styles.progressBarBg, { backgroundColor: isDark ? colors.backgroundTertiary : '#f0f0f0' }]}>
                             <View
                                 style={[
                                     styles.progressBarFill,
@@ -269,20 +269,20 @@ export default function EstadisticasScreen() {
                 </View>
 
                 {/* Insights */}
-                <View style={[styles.insightCard, isDark && styles.insightCardDark]}>
+                <View style={[styles.insightCard, { backgroundColor: colors.surface }]}>
                     <View style={styles.insightHeader}>
                         <IconSymbol size={18} name="lightbulb.fill" color="#FF9500" />
-                        <Text style={[styles.insightTitle, isDark && styles.textDark]}>¿Sabías que?</Text>
+                        <Text style={[styles.insightTitle, { color: colors.text }]}>¿Sabías que?</Text>
                     </View>
-                    <Text style={[styles.insightText, isDark && styles.textDarkSecondary]}>
+                    <Text style={[styles.insightText, { color: colors.textSecondary }]}>
                         Procesas un promedio de {stats.totalOperaciones > 0 && stats.diasTrabajados > 0 ? (stats.totalOperaciones / stats.diasTrabajados).toFixed(0) : 0} operaciones cada día que trabajas.
                     </Text>
                 </View>
 
                 {/* Distribución */}
                 {distribucionData.length > 0 && (
-                    <View style={[styles.chartCard, isDark && styles.cardDark]}>
-                        <Text style={[styles.chartTitle, isDark && styles.textDark]}>Tipos de Operación</Text>
+                    <View style={[styles.chartCard, { backgroundColor: colors.surface }]}>
+                        <Text style={[styles.chartTitle, { color: colors.text }]}>Tipos de Operación</Text>
                         <PieChart
                             data={distribucionData}
                             width={chartWidth - 40}
@@ -351,9 +351,7 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 2,
     },
-    cardDark: {
-        backgroundColor: '#1c1c1e',
-    },
+    // cardDark is no longer used - colors.surface is applied directly
     subKpiRow: {
         flexDirection: 'row',
         gap: 12,
@@ -484,9 +482,7 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 2,
     },
-    insightCardDark: {
-        backgroundColor: '#1c1c1e',
-    },
+    // insightCardDark is no longer used - colors.surface is applied directly
     insightHeader: {
         flexDirection: 'row',
         gap: 8,

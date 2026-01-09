@@ -213,13 +213,13 @@ export default function ConfiguracionScreen() {
     >
       <View style={styles.modalOverlay}>
         <Pressable style={styles.modalBackdrop} onPress={() => setShowAddCanalModal(false)} />
-        <View style={[styles.modalCard, isDark && styles.modalCardDark]}>
-          <Text style={[styles.modalTitle, isDark && styles.textDark]}>Nuevo Canal</Text>
-          <Text style={[styles.modalSubtitle, isDark && styles.textDarkSecondary]}>
+        <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.modalTitle, { color: colors.text }]}>Nuevo Canal</Text>
+          <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
             Ingresa el nombre del banco o billetera
           </Text>
           <TextInput
-            style={[styles.modalInput, isDark && styles.modalInputDark]}
+            style={[styles.modalInput, { backgroundColor: colors.backgroundTertiary, color: colors.text }]}
             placeholder="Ej: Banco XYZ"
             placeholderTextColor={isDark ? '#666' : '#999'}
             value={nuevoCanal}
@@ -259,15 +259,15 @@ export default function ConfiguracionScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         {/* Perfil Header */}
-        <View style={[styles.profileSection, isDark && styles.cardDark]}>
+        <View style={[styles.profileSection, { backgroundColor: colors.surface }]}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{getInitials()}</Text>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={[styles.profileName, isDark && styles.textDark]}>
+            <Text style={[styles.profileName, { color: colors.text }]}>
               {user?.displayName || 'Corresponsal'}
             </Text>
-            <Text style={[styles.profileEmail, isDark && styles.textDarkSecondary]}>
+            <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>
               {user?.email}
             </Text>
           </View>
@@ -280,15 +280,15 @@ export default function ConfiguracionScreen() {
         </View>
 
         {/* Sección: Finanzas */}
-        <Text style={[styles.sectionTitle, isDark && styles.textDark]}>Finanzas</Text>
-        <View style={[styles.card, isDark && styles.cardDark]}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Finanzas</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push('/configurar-comisiones')}
           >
             <IconSymbol size={22} name="dollarsign" color="#34C759" />
             <View style={styles.menuContent}>
-              <Text style={[styles.menuTitle, isDark && styles.textDark]}>Comisiones</Text>
+              <Text style={[styles.menuTitle, { color: colors.text }]}>Comisiones</Text>
               <Text style={styles.menuSubtitle}>Configurar valores por defecto y por banco</Text>
             </View>
             <IconSymbol size={16} name="chevron.right" color="#ccc" />
@@ -297,16 +297,16 @@ export default function ConfiguracionScreen() {
 
         {/* Sección: Canales */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionTitle, isDark && styles.textDark, { marginBottom: 0 }]}>Canales Activos</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }, { marginBottom: 0 }]}>Canales Activos</Text>
           <TouchableOpacity onPress={handleAddCanalPress}>
             <Text style={[styles.actionText, isAbierta && { opacity: 0.5 }]}>+ Agregar</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={[styles.card, isDark && styles.cardDark]}>
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
           {canales.map((canal, index) => (
             <View key={canal.id}>
-              {index > 0 && <View style={[styles.divider, isDark && styles.dividerDark]} />}
+              {index > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
               <View style={styles.channelRow}>
                 <TouchableOpacity
                   style={styles.channelInfo}
@@ -314,7 +314,7 @@ export default function ConfiguracionScreen() {
                 >
                   <IconSymbol size={22} name="building.columns" color={canal.activo ? BrandColors.primary : '#999'} />
                   <View>
-                    <Text style={[styles.channelName, isDark && styles.textDark, !canal.activo && styles.textDisabled]}>
+                    <Text style={[styles.channelName, { color: colors.text }, !canal.activo && styles.textDisabled]}>
                       {canal.nombre}
                     </Text>
                     {canal.usarComisionesPersonalizadas && (
@@ -334,12 +334,12 @@ export default function ConfiguracionScreen() {
         </View>
 
         {/* Sección: Configuración App (Toggles) */}
-        <Text style={[styles.sectionTitle, isDark && styles.textDark]}>Aplicación</Text>
-        <View style={[styles.card, isDark && styles.cardDark]}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Aplicación</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <View style={styles.channelRow}>
             <View style={[styles.channelInfo, { gap: 12 }]}>
               <IconSymbol size={20} name="bell.fill" color={BrandColors.primary} />
-              <Text style={[styles.menuTitle, isDark && styles.textDark]}>Notificaciones</Text>
+              <Text style={[styles.menuTitle, { color: colors.text }]}>Notificaciones</Text>
             </View>
             <Switch
               value={config.notificacionesPush}
@@ -348,11 +348,11 @@ export default function ConfiguracionScreen() {
               thumbColor={isDark ? '#f4f3f4' : '#fff'}
             />
           </View>
-          <View style={[styles.divider, isDark && styles.dividerDark]} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <View style={styles.channelRow}>
             <View style={[styles.channelInfo, { gap: 12 }]}>
               <IconSymbol size={20} name="speaker.wave.2.fill" color={BrandColors.primary} />
-              <Text style={[styles.menuTitle, isDark && styles.textDark]}>Sonidos</Text>
+              <Text style={[styles.menuTitle, { color: colors.text }]}>Sonidos</Text>
             </View>
             <Switch
               value={config.sonidoOperaciones}
@@ -364,17 +364,17 @@ export default function ConfiguracionScreen() {
         </View>
 
         {/* Soporte */}
-        <Text style={[styles.sectionTitle, isDark && styles.textDark]}>Soporte</Text>
-        <View style={[styles.card, isDark && styles.cardDark]}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Soporte</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <TouchableOpacity style={styles.menuItem} onPress={() => Linking.openURL('mailto:soporte@minegocio.com')}>
-            <IconSymbol size={22} name="envelope.fill" color={BrandColors.primary} />
-            <Text style={[styles.menuTitle, isDark && styles.textDark]}>Contactar Soporte</Text>
+            <IconSymbol size={22} name="envelope.fill" color={isDark ? '#F8FAFC' : BrandColors.primary} />
+            <Text style={[styles.menuTitle, { color: colors.text }]}>Contactar Soporte</Text>
           </TouchableOpacity>
         </View>
 
 
         <TouchableOpacity
-          style={[styles.logoutButton, isDark && styles.logoutButtonDark]}
+          style={[styles.logoutButton, isDark && { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}
           onPress={handleLogout}
         >
           <Text style={styles.logoutText}>Cerrar Sesión</Text>
@@ -426,9 +426,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  cardDark: {
-    backgroundColor: '#1c1c1e',
-  },
+  // cardDark is no longer used - colors.surface is applied directly
   avatar: {
     width: 56,
     height: 56,
@@ -615,9 +613,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 24,
   },
-  modalCardDark: {
-    backgroundColor: '#1c1c1e',
-  },
+  // modalCardDark is no longer used - colors.surface is applied directly
   modalTitle: {
     fontSize: 20,
     fontWeight: '800',
@@ -640,7 +636,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalInputDark: {
-    backgroundColor: '#2c2c2e',
+    backgroundColor: '#1E293B', // Slate 800 - matches colors.backgroundTertiary
     color: '#fff',
   },
   modalActions: {

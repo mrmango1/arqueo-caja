@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     cardDark: {
-        backgroundColor: '#1c1c1e',
+        backgroundColor: '#0F172A', // Slate 900 - matches colors.surface
     },
     dateTitle: {
         fontSize: 20,

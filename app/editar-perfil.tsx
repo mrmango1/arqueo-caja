@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     cardDark: {
-        backgroundColor: '#1c1c1e',
+        backgroundColor: '#0F172A', // Slate 900 - matches colors.surface
     },
     inputRow: {
         flexDirection: 'row',
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
         marginLeft: 16,
     },
     dividerDark: {
-        backgroundColor: '#333',
+        backgroundColor: '#1E293B', // Slate 800 - matches colors.border
     },
     helperText: {
         textAlign: 'center',
