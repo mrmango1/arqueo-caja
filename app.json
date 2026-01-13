@@ -10,7 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mrmango1.minegocio"
+      "bundleIdentifier": "com.mrmango1.minegocio",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "appleTeamId": "79LVT24H38"
     },
     "android": {
       "adaptiveIcon": {
@@ -41,11 +45,24 @@
           }
         }
       ],
-      "./plugins/withModularHeaders"
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e25225d4-c376-4c28-9970-e06b47caff14"
+      }
     }
   }
 }
