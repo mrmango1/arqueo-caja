@@ -32,6 +32,8 @@ export interface Transaccion {
   monto: number;
   concepto: string;
   categoria: CategoriaOperacion;
+  tipoServicio?: string;         // ID del servicio específico
+  nombreServicio?: string;       // Nombre del servicio (para persistencia)
   fecha: number; // timestamp en milisegundos
   usuarioId: string;
   usuarioNombre?: string;
@@ -282,3 +284,62 @@ export const calcularComision = (
   return tipo === 'deposito' ? rango.comisionDeposito : rango.comisionRetiro;
 };
 
+// ============================================
+// TIPOS DE SERVICIO DINÁMICOS
+// ============================================
+
+// Interface para tipo de servicio específico
+export interface TipoServicio {
+  id: string;
+  nombre: string;
+  nombreCorto: string;
+  categoria: CategoriaOperacion;  // A qué categoría pertenece
+  icono?: string;                 // Icono personalizado (opcional, hereda del de categoría)
+  esDefault?: boolean;            // Si es del sistema (no se puede eliminar)
+  activo: boolean;
+}
+
+// Catálogo de servicios por defecto
+export const SERVICIOS_DEFAULT: TipoServicio[] = [
+  // Pago de Servicios
+  { id: 'servicios_basicos', nombre: 'Pago de servicios básicos', nombreCorto: 'Serv. Básicos', categoria: 'pago_servicios', esDefault: true, activo: true },
+  { id: 'tarjeta_credito', nombre: 'Pago de tarjeta de crédito', nombreCorto: 'Tarjeta', categoria: 'pago_servicios', esDefault: true, activo: true },
+  { id: 'pension_alimenticia', nombre: 'Pago de pensión alimenticia', nombreCorto: 'Pensión', categoria: 'pago_servicios', esDefault: true, activo: true },
+  { id: 'tramites_vehiculares', nombre: 'Pago de trámites vehiculares', nombreCorto: 'Vehículos', categoria: 'pago_servicios', esDefault: true, activo: true },
+  { id: 'impuestos_iess', nombre: 'Pago de impuestos e IESS', nombreCorto: 'Impuestos', categoria: 'pago_servicios', esDefault: true, activo: true },
+  { id: 'internet_tv', nombre: 'Pago de internet, TV y plan celular', nombreCorto: 'Internet/TV', categoria: 'pago_servicios', esDefault: true, activo: true },
+
+  // Recargas
+  { id: 'recarga_celular', nombre: 'Recarga telefónica', nombreCorto: 'Celular', categoria: 'recarga', esDefault: true, activo: true },
+  { id: 'paquetes_datos', nombre: 'Paquetes de datos', nombreCorto: 'Datos', categoria: 'recarga', esDefault: true, activo: true },
+
+  // Depósitos
+  { id: 'deposito_general', nombre: 'Depósito bancario', nombreCorto: 'Depósito', categoria: 'deposito', esDefault: true, activo: true },
+
+  // Retiros
+  { id: 'retiro_general', nombre: 'Retiro bancario', nombreCorto: 'Retiro', categoria: 'retiro', esDefault: true, activo: true },
+
+  // Giros enviados
+  { id: 'giro_nacional', nombre: 'Giro nacional', nombreCorto: 'Nacional', categoria: 'giro_enviado', esDefault: true, activo: true },
+  { id: 'giro_internacional', nombre: 'Giro internacional', nombreCorto: 'Internacional', categoria: 'giro_enviado', esDefault: true, activo: true },
+
+  // Giros recibidos
+  { id: 'giro_recibido_nacional', nombre: 'Giro recibido nacional', nombreCorto: 'Rec. Nacional', categoria: 'giro_recibido', esDefault: true, activo: true },
+  { id: 'giro_recibido_internacional', nombre: 'Giro recibido internacional', nombreCorto: 'Rec. Internac.', categoria: 'giro_recibido', esDefault: true, activo: true },
+
+  // Otros ingresos
+  { id: 'otro_ingreso_general', nombre: 'Otro ingreso', nombreCorto: 'Otro +', categoria: 'otro_ingreso', esDefault: true, activo: true },
+
+  // Otros egresos  
+  { id: 'otro_egreso_general', nombre: 'Otro egreso', nombreCorto: 'Otro -', categoria: 'otro_egreso', esDefault: true, activo: true },
+];
+
+// Helper para obtener servicios por categoría
+export const getServiciosPorCategoria = (servicios: TipoServicio[], categoria: CategoriaOperacion): TipoServicio[] => {
+  return servicios.filter(s => s.categoria === categoria && s.activo);
+};
+
+// Helper para obtener servicio por ID
+export const getServicioById = (servicios: TipoServicio[], id: string): TipoServicio | undefined => {
+  return servicios.find(s => s.id === id);
+};

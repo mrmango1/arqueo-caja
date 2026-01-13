@@ -4,6 +4,7 @@ import { db } from '@/config/firebase';
 import { BrandColors, Colors, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
+import { useServicios } from '@/context/ServiciosContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
     calcularComision,
@@ -11,6 +12,7 @@ import {
     CONFIGURACION_COMISIONES_DEFAULT,
     getCategoriaById,
     getCategoriasPorTipo,
+    TipoServicio,
     Transaccion
 } from '@/types/caja';
 import { isValidNumber, parseLocalizedFloat, parseLocalizedFloatOrDefault } from '@/utils/numbers';
@@ -18,7 +20,6 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { get, push, ref, update } from 'firebase/database';
 import React, { useState } from 'react';
 import {
-    ActionSheetIOS,
     Alert,
     Dimensions,
     KeyboardAvoidingView,
@@ -30,7 +31,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
@@ -44,45 +45,120 @@ export default function NuevaOperacionScreen() {
     const isDark = colorScheme === 'dark';
     const colors = Colors[isDark ? 'dark' : 'light'];
     const { user } = useAuth();
-    const { canalesActivos, comisionesDefault } = useCanales();
+    const { canalesActivos, comisionesDefault, pendingCanalSeleccion, setPendingCanalSeleccion } = useCanales();
+    const { getServiciosPorCategoria, agregarServicio, pendingServicioSeleccion, setPendingServicioSeleccion } = useServicios();
 
     const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<CategoriaOperacion | null>(
         tipoInicial || null
     );
+    const [servicioSeleccionado, setServicioSeleccionado] = useState<TipoServicio | null>(null);
     const [monto, setMonto] = useState('');
     const [banco, setBanco] = useState('');
     const [referencia, setReferencia] = useState('');
     const [comision, setComision] = useState('');
     const [notas, setNotas] = useState('');
     const [loading, setLoading] = useState(false);
-    const [showCanalesModal, setShowCanalesModal] = useState(false);
+    const [showServiciosModal, setShowServiciosModal] = useState(false);
+    const [nuevoServicioNombre, setNuevoServicioNombre] = useState('');
 
-    // Función para mostrar selector de canales nativo en iOS
+    // Función para mostrar selector de canales - navegar a pantalla modal
     const handleShowCanalesSelector = () => {
-        if (Platform.OS === 'ios') {
-            const cancelButtonIndex = canalesActivos.length;
-            const options = [...canalesActivos.map(c => c.nombre), 'Cancelar'];
-
-            ActionSheetIOS.showActionSheetWithOptions(
-                {
-                    options,
-                    cancelButtonIndex,
-                    title: 'Seleccionar Canal de Transacción',
-                },
-                (buttonIndex) => {
-                    if (buttonIndex !== cancelButtonIndex) {
-                        setBanco(canalesActivos[buttonIndex].nombre);
-                    }
-                }
-            );
-        } else {
-            setShowCanalesModal(true);
-        }
+        router.push('/seleccionar-canal');
     };
 
     const categoriaActual = categoriaSeleccionada ? getCategoriaById(categoriaSeleccionada) : null;
     const categoriasIngreso = getCategoriasPorTipo('ingreso');
     const categoriasEgreso = getCategoriasPorTipo('egreso');
+
+    // Get services for selected category
+    const serviciosDisponibles = categoriaSeleccionada
+        ? getServiciosPorCategoria(categoriaSeleccionada)
+        : [];
+
+    // Reset service when category changes
+    React.useEffect(() => {
+        setServicioSeleccionado(null);
+    }, [categoriaSeleccionada]);
+
+    // Handle add new service via native prompt
+    const handleAgregarServicioPrompt = () => {
+        if (Platform.OS === 'ios') {
+            Alert.prompt(
+                'Nuevo Servicio',
+                'Ingresa el nombre del nuevo servicio',
+                [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                        text: 'Agregar',
+                        onPress: async (nombre: string | undefined) => {
+                            if (!nombre?.trim() || !categoriaSeleccionada) return;
+                            try {
+                                const nuevoServicio = await agregarServicio({
+                                    nombre: nombre.trim(),
+                                    nombreCorto: nombre.trim().substring(0, 15),
+                                    categoria: categoriaSeleccionada,
+                                    activo: true,
+                                });
+                                setServicioSeleccionado(nuevoServicio);
+                            } catch (error) {
+                                console.error('Error adding service:', error);
+                            }
+                        },
+                    },
+                ],
+                'plain-text',
+                '',
+                'default'
+            );
+        } else {
+            setShowServiciosModal(true);
+        }
+    };
+
+    // Función para mostrar selector de servicios - navegar a pantalla modal
+    const handleShowServiciosSelector = () => {
+        if (categoriaSeleccionada) {
+            router.push({
+                pathname: '/seleccionar-servicio',
+                params: { categoria: categoriaSeleccionada }
+            });
+        }
+    };
+
+    // Listen for pending service selection from the service selector screen
+    React.useEffect(() => {
+        if (pendingServicioSeleccion) {
+            setServicioSeleccionado(pendingServicioSeleccion);
+            setPendingServicioSeleccion(null); // Clear after consuming
+        }
+    }, [pendingServicioSeleccion]);
+
+    // Listen for pending channel selection
+    React.useEffect(() => {
+        if (pendingCanalSeleccion) {
+            setBanco(pendingCanalSeleccion.nombre);
+            setPendingCanalSeleccion(null);
+        }
+    }, [pendingCanalSeleccion]);
+
+    // Handle add new service (for Android modal)
+    const handleAgregarServicio = async () => {
+        if (!nuevoServicioNombre.trim() || !categoriaSeleccionada) return;
+
+        try {
+            const nuevoServicio = await agregarServicio({
+                nombre: nuevoServicioNombre.trim(),
+                nombreCorto: nuevoServicioNombre.trim().substring(0, 15),
+                categoria: categoriaSeleccionada,
+                activo: true,
+            });
+            setServicioSeleccionado(nuevoServicio);
+            setNuevoServicioNombre('');
+            setShowServiciosModal(false);
+        } catch (error) {
+            console.error('Error adding service:', error);
+        }
+    };
 
     // Auto-calcular comisión
     React.useEffect(() => {
@@ -163,8 +239,10 @@ export default function NuevaOperacionScreen() {
                 cajaId,
                 tipo: categoriaActual!.tipo,
                 monto: montoNum,
-                concepto: categoriaActual!.nombre,
+                concepto: servicioSeleccionado?.nombre || categoriaActual!.nombre,
                 categoria: categoriaSeleccionada,
+                tipoServicio: servicioSeleccionado?.id,
+                nombreServicio: servicioSeleccionado?.nombre,
                 fecha: Date.now(),
                 usuarioId: user!.uid,
                 usuarioNombre: user!.email || 'Usuario',
@@ -208,56 +286,93 @@ export default function NuevaOperacionScreen() {
         }
     };
 
-    // Modal de selección de canal de transacción
-    const CanalModal = () => (
+
+
+    // Modal de selección de tipo de servicio
+    const ServicioModal = () => (
         <Modal
-            visible={showCanalesModal}
+            visible={showServiciosModal}
             animationType="slide"
             transparent={true}
-            onRequestClose={() => setShowCanalesModal(false)}
+            onRequestClose={() => setShowServiciosModal(false)}
         >
-            <View style={styles.modalOverlay}>
-                <Pressable style={styles.modalBackdrop} onPress={() => setShowCanalesModal(false)} />
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.modalOverlay}
+            >
+                <Pressable style={styles.modalBackdrop} onPress={() => setShowServiciosModal(false)} />
                 <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
                     <View style={styles.modalHandle} />
-                    <Text style={[styles.modalTitle, isDark && styles.textDark]}>Canal de Transacción</Text>
+                    <Text style={[styles.modalTitle, isDark && styles.textDark]}>Tipo de Servicio</Text>
 
-                    <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
-                        {canalesActivos.map((canal) => (
+                    <ScrollView
+                        style={styles.modalList}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        {serviciosDisponibles.map((servicio) => (
                             <TouchableOpacity
-                                key={canal.id}
+                                key={servicio.id}
                                 style={[
                                     styles.modalItem,
-                                    banco === canal.nombre && styles.modalItemSelected,
+                                    servicioSeleccionado?.id === servicio.id && styles.modalItemSelected,
                                 ]}
                                 onPress={() => {
-                                    setBanco(canal.nombre);
-                                    setShowCanalesModal(false);
+                                    setServicioSeleccionado(servicio);
+                                    setShowServiciosModal(false);
                                 }}
                                 activeOpacity={0.7}
                             >
                                 <View style={styles.modalItemContent}>
                                     <IconSymbol
                                         size={20}
-                                        name="building.columns"
-                                        color={banco === canal.nombre ? BrandColors.primary : (isDark ? '#666' : '#999')}
+                                        name="list.bullet"
+                                        color={servicioSeleccionado?.id === servicio.id ? BrandColors.primary : (isDark ? '#666' : '#999')}
                                     />
                                     <Text style={[
                                         styles.modalItemText,
-                                        banco === canal.nombre && styles.modalItemTextSelected,
+                                        servicioSeleccionado?.id === servicio.id && styles.modalItemTextSelected,
                                         isDark && styles.textDark
                                     ]}>
-                                        {canal.nombre}
+                                        {servicio.nombre}
                                     </Text>
                                 </View>
-                                {banco === canal.nombre && (
+                                {servicioSeleccionado?.id === servicio.id && (
                                     <IconSymbol size={20} name="checkmark.circle.fill" color={BrandColors.primary} />
                                 )}
                             </TouchableOpacity>
                         ))}
+
+                        {/* Add new service option */}
+                        <View style={[styles.addServiceSection, { borderTopColor: colors.border }]}>
+                            <Text style={[styles.addServiceLabel, { color: colors.textSecondary }]}>
+                                ¿No encuentras el servicio?
+                            </Text>
+                            <View style={styles.addServiceRow}>
+                                <TextInput
+                                    style={[styles.addServiceInput, { backgroundColor: colors.backgroundTertiary, color: colors.text }]}
+                                    placeholder="Nombre del nuevo servicio..."
+                                    placeholderTextColor={isDark ? '#555' : '#aaa'}
+                                    value={nuevoServicioNombre}
+                                    onChangeText={setNuevoServicioNombre}
+                                    returnKeyType="done"
+                                    onSubmitEditing={handleAgregarServicio}
+                                />
+                                <TouchableOpacity
+                                    style={[
+                                        styles.addServiceButton,
+                                        { backgroundColor: nuevoServicioNombre.trim() ? BrandColors.primary : colors.backgroundTertiary }
+                                    ]}
+                                    onPress={handleAgregarServicio}
+                                    disabled={!nuevoServicioNombre.trim()}
+                                >
+                                    <IconSymbol size={20} name="plus" color={nuevoServicioNombre.trim() ? '#fff' : colors.textSecondary} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
                     </ScrollView>
                 </View>
-            </View>
+            </KeyboardAvoidingView>
         </Modal>
     );
 
@@ -383,9 +498,7 @@ export default function NuevaOperacionScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={[styles.container, { backgroundColor: colors.background }]}
         >
-            <CanalModal />
-
-
+            <ServicioModal />
 
             <Stack.Screen
                 options={{
@@ -480,6 +593,34 @@ export default function NuevaOperacionScreen() {
                             </TouchableOpacity>
                         </View>
 
+                        {/* Tipo de Servicio */}
+                        {serviciosDisponibles.length > 0 && (
+                            <View style={styles.formGroup}>
+                                <View style={styles.labelRow}>
+                                    <IconSymbol size={16} name="list.bullet" color={colors.textSecondary} />
+                                    <Text style={[styles.formLabel, { color: colors.text }]}>Tipo de Servicio</Text>
+                                    <View style={[styles.optionalBadge, isDark && styles.optionalBadgeDark]}>
+                                        <Text style={styles.optionalText}>OPCIONAL</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity
+                                    style={[styles.selectButton, { backgroundColor: colors.backgroundTertiary }]}
+                                    onPress={handleShowServiciosSelector}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={[
+                                        styles.selectButtonText,
+                                        !servicioSeleccionado && styles.selectButtonPlaceholder,
+                                        { color: servicioSeleccionado ? colors.text : colors.textSecondary }
+                                    ]}>
+                                        {servicioSeleccionado?.nombre || 'Seleccionar servicio'}
+                                    </Text>
+                                    <View style={[styles.selectArrowBox, isDark && styles.selectArrowBoxDark]}>
+                                        <IconSymbol size={16} name="chevron.down" color="#999" />
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
+                        )}
 
                         {/* Referencia */}
                         <View style={styles.formGroup}>
@@ -488,6 +629,9 @@ export default function NuevaOperacionScreen() {
                                 <Text style={[styles.formLabel, { color: colors.text }]}>
                                     N° Referencia / Comprobante
                                 </Text>
+                                <View style={[styles.optionalBadge, isDark && styles.optionalBadgeDark]}>
+                                    <Text style={styles.optionalText}>OPCIONAL</Text>
+                                </View>
                             </View>
                             <TextInput
                                 style={[styles.textInputField, { backgroundColor: colors.backgroundTertiary, color: colors.text }]}
@@ -908,5 +1052,36 @@ const styles = StyleSheet.create({
     },
     textDarkSecondary: {
         color: '#888',
+    },
+
+    // Add service styles
+    addServiceSection: {
+        marginTop: 16,
+        paddingTop: 16,
+        borderTopWidth: 1,
+    },
+    addServiceLabel: {
+        fontSize: 13,
+        fontWeight: '500',
+        marginBottom: 12,
+    },
+    addServiceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    addServiceInput: {
+        flex: 1,
+        borderRadius: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        fontSize: 15,
+    },
+    addServiceButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });

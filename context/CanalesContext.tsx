@@ -21,6 +21,8 @@ interface CanalesContextType {
     actualizarComisionesDefault: (config: ConfiguracionComisiones) => Promise<void>;
     obtenerComision: (canalId: string, monto: number, tipo: 'deposito' | 'retiro') => number;
     recargarCanales: () => Promise<void>;
+    pendingCanalSeleccion: CanalTransaccion | null;
+    setPendingCanalSeleccion: (canal: CanalTransaccion | null) => void;
 }
 
 const CanalesContext = createContext<CanalesContextType | undefined>(undefined);
@@ -30,6 +32,7 @@ export function CanalesProvider({ children }: { children: React.ReactNode }) {
     const [canales, setCanales] = useState<CanalTransaccion[]>(CANALES_TRANSACCION_DEFAULT);
     const [comisionesDefault, setComisionesDefault] = useState<ConfiguracionComisiones>(CONFIGURACION_COMISIONES_DEFAULT);
     const [loading, setLoading] = useState(true);
+    const [pendingCanalSeleccion, setPendingCanalSeleccion] = useState<CanalTransaccion | null>(null);
 
     const storageKeyCanales = `canales_${user?.uid || 'default'}`;
     const storageKeyComisiones = `comisiones_${user?.uid || 'default'}`;
@@ -173,6 +176,8 @@ export function CanalesProvider({ children }: { children: React.ReactNode }) {
                 actualizarComisionesDefault,
                 obtenerComision,
                 recargarCanales,
+                pendingCanalSeleccion,
+                setPendingCanalSeleccion,
             }}
         >
             {children}

@@ -9,8 +9,10 @@ import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Caja, getCategoriaById, SaldoCanalInicial, Transaccion } from '@/types/caja';
+import { calcularSaldosCanales } from '@/utils/channel-balances';
+import { useHeaderHeight } from '@react-navigation/elements';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { get, onValue, ref, update } from 'firebase/database';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -29,7 +31,6 @@ import {
   View
 } from 'react-native';
 import Animated, {
-  FadeInDown,
   FadeInUp
 } from 'react-native-reanimated';
 
@@ -43,6 +44,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 export default function HomeScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const colors = Colors[isDark ? 'dark' : 'light'];
@@ -105,6 +107,29 @@ export default function HomeScreen() {
     };
   }, [user]);
 
+  const headerHeight = useHeaderHeight();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      navigation.getParent()?.setOptions({
+        headerShown: true,
+        headerTitle: 'Mi Caja',
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={() => router.push('/cerrar-caja')}
+            style={[styles.closeButton]}
+            activeOpacity={0.7}
+          >
+            <IconSymbol size={16} name="lock.fill" color={isDark ? '#F8FAFC' : BrandColors.primary} />
+            <Text style={[styles.closeButtonText, { color: isDark ? '#F8FAFC' : BrandColors.primary }]}>Cerrar Caja</Text>
+          </TouchableOpacity>
+        ),
+        headerStyle: { backgroundColor: 'transparent' },
+        headerTransparent: true,
+      });
+    }, [navigation, colors.background, isDark])
+  );
+
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -129,39 +154,9 @@ export default function HomeScreen() {
   const saldosPorCanal = useMemo(() => {
     if (!cajaActual) return [];
     const saldosIniciales: SaldoCanalInicial[] = (cajaActual as any).saldosCanales || [];
-    const movimientosPorCanal: { [key: string]: { entradas: number; salidas: number } } = {};
-    const categoriasAumentan = ['retiro', 'giro'];
-    const categoriasDisminuyen = ['deposito', 'recarga', 'pago_servicios', 'pago_varios'];
 
-    transacciones.filter(t => !t.anulada).forEach((t) => {
-      if (t.banco) {
-        const canal = canalesActivos.find(c => c.nombre === t.banco);
-        if (canal) {
-          if (!movimientosPorCanal[canal.id]) {
-            movimientosPorCanal[canal.id] = { entradas: 0, salidas: 0 };
-          }
-          if (categoriasAumentan.includes(t.categoria)) {
-            movimientosPorCanal[canal.id].entradas += t.monto;
-          } else if (categoriasDisminuyen.includes(t.categoria)) {
-            movimientosPorCanal[canal.id].salidas += t.monto;
-          }
-        }
-      }
-    });
-
-    return canalesActivos.map(canal => {
-      const saldoInicial = saldosIniciales.find(s => s.canalId === canal.id)?.saldo || 0;
-      const movimientos = movimientosPorCanal[canal.id] || { entradas: 0, salidas: 0 };
-      const saldoActual = saldoInicial + movimientos.entradas - movimientos.salidas;
-      return {
-        canalId: canal.id,
-        canalNombre: canal.nombre,
-        saldoInicial,
-        entradas: movimientos.entradas,
-        salidas: movimientos.salidas,
-        saldoActual,
-      };
-    }).filter(s => s.saldoInicial !== 0 || s.entradas !== 0 || s.salidas !== 0);
+    // Use centralized function for consistent channel balance calculations
+    return calcularSaldosCanales(saldosIniciales, transacciones, canalesActivos);
   }, [cajaActual, transacciones, canalesActivos]);
 
   const toggleSaldos = () => {
@@ -246,16 +241,10 @@ export default function HomeScreen() {
   // SIN CAJA ABIERTA
   if (!cajaActual) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Animated.View
-          entering={FadeInDown.duration(500)}
-          style={[styles.headerSimple, { backgroundColor: colors.surface }]}
-        >
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Mi Negocio</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            Hola, {user?.displayName?.split(' ')[0] || 'Corresponsal'} 👋
-          </Text>
-        </Animated.View>
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: headerHeight }]}>
+        <Text style={[styles.headerSubtitle, { color: colors.textSecondary, marginTop: Spacing.lg, marginHorizontal: Spacing.lg }]}>
+          Hola, {user?.displayName?.split(' ')[0] || 'Corresponsal'} 👋
+        </Text>
 
         <EmptyState
           icon="lock.fill"
@@ -276,30 +265,13 @@ export default function HomeScreen() {
   // CON CAJA ABIERTA
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <Animated.View
-        entering={FadeInDown.duration(400)}
-        style={[styles.topBar, { backgroundColor: colors.background }]}
-      >
-        <View>
-          <Text style={[styles.topBarTitle, { color: colors.text }]}>Mi Caja</Text>
-          <Text style={[styles.topBarDate, { color: colors.textSecondary }]}>
-            {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => router.push('/cerrar-caja')}
-          style={[styles.closeButton, { backgroundColor: colors.surface }]}
-          activeOpacity={0.7}
-        >
-          <IconSymbol size={16} name="lock.fill" color={isDark ? '#F8FAFC' : BrandColors.primary} />
-        </TouchableOpacity>
-      </Animated.View>
-
       <ScrollView
         style={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContentContainer}
+        contentContainerStyle={[
+          styles.scrollContentContainer,
+          { paddingTop: headerHeight }
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -309,6 +281,12 @@ export default function HomeScreen() {
           />
         }
       >
+        {/* Header - Date */}
+        <View style={{ marginBottom: Spacing.base, marginTop: Spacing.md }}>
+          <Text style={[styles.topBarDate, { color: colors.textSecondary }]}>
+            {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </Text>
+        </View>
         {/* Balance Card - Hero */}
         <Animated.View entering={FadeInUp.delay(100).springify()}>
           <View
@@ -384,7 +362,7 @@ export default function HomeScreen() {
                           </View>
                         </View>
                         <Text style={styles.canalSaldo}>
-                          ${saldo.saldoActual.toFixed(2)}
+                          ${saldo.saldoEsperado.toFixed(2)}
                         </Text>
                       </View>
                     ))}
@@ -556,14 +534,7 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
     marginTop: 2,
   },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Shadows.sm,
-  },
+
 
   // Scroll
   scrollContent: {
@@ -754,5 +725,17 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     marginHorizontal: Spacing.base,
+  },
+  closeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  closeButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

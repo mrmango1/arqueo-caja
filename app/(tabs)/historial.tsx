@@ -1,4 +1,4 @@
-import { formatDateHeader, groupCajasByDate } from '@/app/utils/date-utils';
+import { formatDateHeader, groupCajasByDate } from '@/app/utils/_date-utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { StatCard } from '@/components/ui/stat-card';
@@ -18,27 +18,53 @@ import {
   Text,
   View
 } from 'react-native';
-import Animated, { FadeInDown, FadeInRight, FadeInUp, FadeOut, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeInRight, FadeInUp, FadeOut, LinearTransition } from 'react-native-reanimated';
 
+import { useHeaderHeight } from '@react-navigation/elements';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 
 
+type FilterPeriod = 'all' | 'today' | 'week' | 'month';
+type FilterStatus = 'all' | 'diff' | 'balanced';
+type TransactionType = 'ingreso' | 'egreso';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default function HistorialScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const colors = Colors[isDark ? 'dark' : 'light'];
   const { user } = useAuth();
+
+
   const [cajasCerradas, setCajasCerradas] = useState<Caja[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Filters State
+  const [periodFilter, setPeriodFilter] = useState<FilterPeriod>('all');
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
+
+
   // State for expanded days (default collapsed for stacking effect)
   const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
+
+  const headerHeight = useHeaderHeight();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      navigation.getParent()?.setOptions({
+        headerShown: true,
+        headerTitle: 'Historial',
+        headerRight: null,
+        headerStyle: { backgroundColor: 'transparent' },
+        headerTransparent: true,
+      });
+    }, [navigation, colors.background])
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -73,6 +99,113 @@ export default function HistorialScreen() {
     return () => unsubscribe();
   }, [user]);
 
+  const [statsByCaja, setStatsByCaja] = useState<Record<string, {
+    depositos: number;
+    retiros: number;
+    comisiones: number;
+  }>>({});
+
+  useEffect(() => {
+    if (!user) return;
+
+    const transRef = ref(db, 'transacciones');
+    const unsubscribe = onValue(transRef, (snapshot) => {
+      const stats: Record<string, {
+        depositos: number;
+        retiros: number;
+        comisiones: number;
+      }> = {};
+
+      if (snapshot.exists()) {
+        snapshot.forEach((child) => {
+          const t = child.val();
+          if (t.anulada || !t.cajaId) return;
+
+          const cajaId = t.cajaId;
+          if (!stats[cajaId]) {
+            stats[cajaId] = {
+              depositos: 0,
+              retiros: 0,
+              comisiones: 0,
+            };
+          }
+
+          if (t.tipo === 'ingreso') {
+            stats[cajaId].depositos += t.monto;
+          } else if (t.tipo === 'egreso') {
+            stats[cajaId].retiros += t.monto;
+          }
+          stats[cajaId].comisiones += (t.comision || 0);
+
+        });
+      }
+      setStatsByCaja(stats);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Merge legacy/stored caja data with realtime calculated stats (excluding cancelled transactions)
+  const processedCajas = useMemo(() => {
+    return cajasCerradas.map(caja => {
+      if (!caja.id) return caja;
+      const s = statsByCaja[caja.id];
+      if (!s) return caja;
+
+      const totalDepositos = s.depositos;
+      const totalRetiros = s.retiros;
+      const totalComisiones = s.comisiones;
+
+      const saldoEsperado = (caja.montoInicial || 0) + totalDepositos - totalRetiros + totalComisiones;
+      const diferencia = (caja.montoFinal || 0) - saldoEsperado;
+
+      return {
+        ...caja,
+        totalDepositos,
+        totalRetiros,
+        totalComisiones,
+        diferencia,
+      };
+    });
+  }, [cajasCerradas, statsByCaja]);
+
+  const filteredCajas = useMemo(() => {
+    let result = processedCajas;
+
+    // Apply Period Filter
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+    // Start of Week (Sunday as start)
+    const dayOfWeek = now.getDay();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - dayOfWeek);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    // Start of Month
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+    if (periodFilter === 'today') {
+      result = result.filter(c => (c.fechaCierre || 0) >= startOfToday);
+    } else if (periodFilter === 'week') {
+      result = result.filter(c => (c.fechaCierre || 0) >= startOfWeek.getTime());
+    } else if (periodFilter === 'month') {
+      result = result.filter(c => (c.fechaCierre || 0) >= startOfMonth);
+    }
+
+    // Apply Status Filter
+    if (statusFilter === 'diff') {
+      result = result.filter(c => c.diferencia !== undefined && Math.abs(c.diferencia) > 0.01);
+    } else if (statusFilter === 'balanced') {
+      result = result.filter(c => c.diferencia === undefined || Math.abs(c.diferencia) <= 0.01);
+    }
+
+
+
+    return result;
+  }, [processedCajas, periodFilter, statusFilter]);
+
+
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -80,14 +213,19 @@ export default function HistorialScreen() {
   }, []);
 
   const stats = useMemo(() => {
-    const totalComisiones = cajasCerradas.reduce((sum, c) => sum + (c.totalComisiones || 0), 0);
-    const promedioComisiones = cajasCerradas.length > 0 ? totalComisiones / cajasCerradas.length : 0;
-    return { totalComisiones, totalArqueos: cajasCerradas.length, promedioComisiones };
-  }, [cajasCerradas]);
+    // Stats calculation should ideally be based on the FILTERED view or TOTAL view?
+    // Usually total view stats are better at the top, unless specified. 
+    // Let's keep these stats for ALL time, as the cards say "Ganancias Totales".
+    // Alternatively, we could make them reactive to filters. "Ganancias (Filtrado)".
+    // Let's keep "Ganancias Totales" as GLOBAL stats for now to avoid confusion.
+    const totalComisiones = processedCajas.reduce((sum, c) => sum + (c.totalComisiones || 0), 0);
+    const promedioComisiones = processedCajas.length > 0 ? totalComisiones / processedCajas.length : 0;
+    return { totalComisiones, totalArqueos: processedCajas.length, promedioComisiones };
+  }, [processedCajas]);
 
   const groupedCajas = useMemo(() => {
-    return groupCajasByDate(cajasCerradas);
-  }, [cajasCerradas]);
+    return groupCajasByDate(filteredCajas);
+  }, [filteredCajas]);
 
   const toggleDay = (dateKey: string) => {
     setExpandedDays(prev => ({
@@ -110,6 +248,28 @@ export default function HistorialScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push({ pathname: '/detalle-caja', params: { id: cajaId } });
   };
+
+  const renderFilterChip = (label: string, isSelected: boolean, onPress: () => void) => (
+    <Pressable
+      onPress={() => {
+        Haptics.selectionAsync();
+        onPress();
+      }}
+      style={[
+        styles.filterChip,
+        {
+          backgroundColor: isSelected ? BrandColors.primary : (isDark ? '#2C2C2E' : '#E5E5EA'),
+        }
+      ]}
+    >
+      <Text style={[
+        styles.filterChipText,
+        { color: isSelected ? '#fff' : colors.text }
+      ]}>
+        {label}
+      </Text>
+    </Pressable>
+  );
 
   const renderCajaCard = (caja: Caja, index: number, isStacked: boolean, totalInStack: number) => {
     // If stacked, only show top card fully.
@@ -147,10 +307,6 @@ export default function HistorialScreen() {
       }
     }
 
-    // Shadow container needs to be the outer Animated.View (or a wrapper inside it)
-    // The pressing logic should probably be on the card content or the whole container.
-    // Ideally: Animated.View (Shadow Wrapper) -> AnimatedPressable (Content Wrapper + overflow hidden)
-
     return (
       <Animated.View
         key={caja.id}
@@ -165,8 +321,6 @@ export default function HistorialScreen() {
           {
             backgroundColor: colors.surface,
             borderRadius: Radius.xl,
-            // Make sure background cards have contrast if they are white on white
-            // (shadow handles it, but maybe slight darkening?)
           }
         ]}
       >
@@ -267,18 +421,13 @@ export default function HistorialScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <Animated.View
-        entering={FadeInDown.duration(400)}
-        style={[styles.topBar, { backgroundColor: colors.background }]}
-      >
-        <Text style={[styles.topBarTitle, { color: colors.text }]}>Historial</Text>
-      </Animated.View>
-
       <ScrollView
         style={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContainer}
+        contentContainerStyle={[
+          styles.scrollContainer,
+          { paddingTop: headerHeight }
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -288,6 +437,25 @@ export default function HistorialScreen() {
           />
         }
       >
+        {/* Filters */}
+        <View style={{ marginBottom: Spacing.sm, marginTop: Spacing.base }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: Spacing.lg, gap: 8, alignItems: 'center' }}
+            style={{ maxHeight: 50 }}
+          >
+            {renderFilterChip('Todos', periodFilter === 'all', () => setPeriodFilter('all'))}
+            {renderFilterChip('Hoy', periodFilter === 'today', () => setPeriodFilter('today'))}
+            {renderFilterChip('Esta Semana', periodFilter === 'week', () => setPeriodFilter('week'))}
+            {renderFilterChip('Este Mes', periodFilter === 'month', () => setPeriodFilter('month'))}
+            <View style={styles.verticalDivider} />
+            {renderFilterChip('Todos', statusFilter === 'all', () => setStatusFilter('all'))}
+            {renderFilterChip('Diferencias', statusFilter === 'diff', () => setStatusFilter('diff'))}
+            {renderFilterChip('Cuadrados', statusFilter === 'balanced', () => setStatusFilter('balanced'))}
+          </ScrollView>
+        </View>
+
         {/* Stats Section */}
         <Animated.View
           entering={FadeInUp.delay(100).springify()}
@@ -339,11 +507,11 @@ export default function HistorialScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Cierres Recientes</Text>
         </View>
 
-        {cajasCerradas.length === 0 ? (
+        {filteredCajas.length === 0 ? (
           <EmptyState
             icon="clock.arrow.circlepath"
-            title="Sin historial aún"
-            description="Aquí verás tus cierres de caja detallados"
+            title="Sin resultados"
+            description="No hay cierres que coincidan con los filtros"
             style={{ marginTop: Spacing.xl }}
           />
         ) : (
@@ -392,6 +560,7 @@ export default function HistorialScreen() {
         {/* Bottom Spacing */}
         <View style={{ height: 120 }} />
       </ScrollView>
+
     </View>
   );
 }
@@ -567,5 +736,107 @@ const styles = StyleSheet.create({
   diferenciaText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  filterIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  verticalDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#C7C7CC',
+    marginHorizontal: 4,
+    alignSelf: 'center',
+  },
+  badgeCount: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#FF3B30',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#fff',
+  },
+  badgeCountText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  filterSection: {
+    marginBottom: 24,
+  },
+  filterSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  resetButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  applyButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 14,
   },
 });

@@ -1,9 +1,11 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { db } from '@/config/firebase';
-import { BrandColors, Colors } from '@/constants/theme';
+import { BrandColors, Colors, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Caja, Transaccion, getCategoriaById } from '@/types/caja';
+import { useHeaderHeight } from '@react-navigation/elements';
+import { useFocusEffect, useNavigation } from 'expo-router';
 import { onValue, ref } from 'firebase/database';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -25,10 +27,25 @@ export default function EstadisticasScreen() {
     const isDark = colorScheme === 'dark';
     const colors = Colors[isDark ? 'dark' : 'light'];
     const { user } = useAuth();
+    const navigation = useNavigation();
     const [cajasCerradas, setCajasCerradas] = useState<Caja[]>([]);
     const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+
+    const headerHeight = useHeaderHeight();
+
+    useFocusEffect(
+        React.useCallback(() => {
+            navigation.getParent()?.setOptions({
+                headerShown: true,
+                headerTitle: 'Estadísticas',
+                headerRight: null,
+                headerStyle: { backgroundColor: 'transparent' },
+                headerTransparent: true,
+            });
+        }, [navigation, colors.background])
+    );
 
     useEffect(() => {
         if (!user) {
@@ -168,15 +185,12 @@ export default function EstadisticasScreen() {
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            {/* Header unificado */}
-            <View style={[styles.topBar, { backgroundColor: colors.background }]}>
-                <Text style={[styles.topBarTitle, isDark && styles.textDark]}>Estadísticas</Text>
-            </View>
+
 
             <ScrollView
                 style={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContainer}
+                contentContainerStyle={[styles.contentContainer, { paddingTop: headerHeight }]}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BrandColors.primary} />}
             >
                 {/* KPIs Grid */}
@@ -312,6 +326,10 @@ const styles = StyleSheet.create({
     centered: {
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    contentContainer: {
+        paddingBottom: 40,
+        paddingHorizontal: Spacing.lg,
     },
     topBar: {
         paddingTop: 60,

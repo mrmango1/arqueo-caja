@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Caja, SaldoCanalInicial, Transaccion } from '@/types/caja';
+import { calcularSaldosCanalesMap } from '@/utils/channel-balances';
 import { isValidNumber, parseLocalizedFloat } from '@/utils/numbers';
 import * as Haptics from 'expo-haptics';
 import { Stack, useRouter } from 'expo-router';
@@ -48,6 +49,11 @@ export default function CerrarCajaScreen() {
       retiros: number;
       saldoEsperado: number;
     };
+  }>({});
+
+  // Real balances entered by user for each channel
+  const [saldosRealesCanales, setSaldosRealesCanales] = useState<{
+    [canalNombre: string]: string;
   }>({});
 
   useEffect(() => {
@@ -102,66 +108,18 @@ export default function CerrarCajaScreen() {
 
     const saldosIniciales: SaldoCanalInicial[] = (cajaActual as any).saldosCanales || [];
 
-    const saldosPorCanal: {
-      [canalNombre: string]: {
-        saldoInicial: number;
-        depositos: number;
-        retiros: number;
-        saldoEsperado: number;
-      };
-    } = {};
-
-    saldosIniciales.forEach((saldo) => {
-      saldosPorCanal[saldo.canalNombre] = {
-        saldoInicial: saldo.saldo,
-        depositos: 0,
-        retiros: 0,
-        saldoEsperado: saldo.saldo,
-      };
-    });
-
-    canalesActivos.forEach((canal) => {
-      if (!saldosPorCanal[canal.nombre]) {
-        saldosPorCanal[canal.nombre] = {
-          saldoInicial: 0,
-          depositos: 0,
-          retiros: 0,
-          saldoEsperado: 0,
-        };
-      }
-    });
-
-    transacciones.forEach((trans) => {
-      if (!trans.banco) return;
-      if (trans.anulada) return;
-
-      const bancoNombre = trans.banco;
-
-      if (!saldosPorCanal[bancoNombre]) {
-        saldosPorCanal[bancoNombre] = {
-          saldoInicial: 0,
-          depositos: 0,
-          retiros: 0,
-          saldoEsperado: 0,
-        };
-      }
-
-      if (trans.tipo === 'ingreso') {
-        saldosPorCanal[bancoNombre].depositos += trans.monto;
-        saldosPorCanal[bancoNombre].saldoEsperado += trans.monto;
-      } else if (trans.tipo === 'egreso') {
-        saldosPorCanal[bancoNombre].retiros += trans.monto;
-        saldosPorCanal[bancoNombre].saldoEsperado -= trans.monto;
-      }
-    });
+    // Use centralized function to calculate channel balances
+    const saldosPorCanal = calcularSaldosCanalesMap(saldosIniciales, transacciones, canalesActivos);
 
     setSaldosCanalesCalculados(saldosPorCanal);
   }, [cajaActual, transacciones, canalesActivos]);
 
   const calcularTotales = () => {
-    const totalDepositos = transacciones.filter(t => t.tipo === 'ingreso').reduce((sum, t) => sum + t.monto, 0);
-    const totalRetiros = transacciones.filter(t => t.tipo === 'egreso').reduce((sum, t) => sum + t.monto, 0);
-    const totalComisiones = transacciones.reduce((sum, t) => sum + (t.comision || 0), 0);
+    const transaccionesValidas = transacciones.filter(t => !t.anulada);
+
+    const totalDepositos = transaccionesValidas.filter(t => t.tipo === 'ingreso').reduce((sum, t) => sum + t.monto, 0);
+    const totalRetiros = transaccionesValidas.filter(t => t.tipo === 'egreso').reduce((sum, t) => sum + t.monto, 0);
+    const totalComisiones = transaccionesValidas.reduce((sum, t) => sum + (t.comision || 0), 0);
     const saldoEsperado = (cajaActual?.montoInicial || 0) + totalDepositos - totalRetiros + totalComisiones;
     return { totalDepositos, totalRetiros, totalComisiones, saldoEsperado };
   };
@@ -190,6 +148,19 @@ export default function CerrarCajaScreen() {
             isClosing.current = true;
             setSaving(true);
             try {
+              // Prepare channel balance data for saving
+              const saldosCanalesArqueo = Object.entries(saldosCanalesCalculados).map(([canalNombre, datos]) => ({
+                canalNombre,
+                saldoInicial: datos.saldoInicial,
+                depositos: datos.depositos,
+                retiros: datos.retiros,
+                saldoEsperado: datos.saldoEsperado,
+                saldoReal: saldosRealesCanales[canalNombre] ? parseLocalizedFloat(saldosRealesCanales[canalNombre]) : null,
+                diferencia: saldosRealesCanales[canalNombre]
+                  ? parseLocalizedFloat(saldosRealesCanales[canalNombre]) - datos.saldoEsperado
+                  : null,
+              }));
+
               await update(ref(db, `cajas/${cajaActual!.id}`), {
                 estado: 'cerrada',
                 fechaCierre: Date.now(),
@@ -199,6 +170,7 @@ export default function CerrarCajaScreen() {
                 totalRetiros,
                 totalComisiones,
                 diferencia,
+                saldosCanalesArqueo, // Save channel balance verification data
                 ...(notas ? { notas } : {}),
               });
 
@@ -263,187 +235,235 @@ export default function CerrarCajaScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Summary Card */}
+        {/* Session Summary Card - Focus on Earnings */}
         <Animated.View entering={FadeInUp.delay(100).springify()}>
           <View
             style={[styles.summaryCard, Shadows.lg, { backgroundColor: BrandColors.primary }]}
           >
             <View style={styles.summaryHeader}>
               <View>
-                <Text style={styles.summaryHeaderLabel}>Saldo Esperado</Text>
-                <Text style={styles.summaryHeaderValue}>${saldoEsperado.toFixed(2)}</Text>
+                <Text style={styles.summaryHeaderLabel}>Tu Ganancia</Text>
+                <Text style={[styles.summaryHeaderValue]}>${totalComisiones.toFixed(2)}</Text>
               </View>
               <View style={styles.summaryIconBg}>
-                <IconSymbol size={24} name="chart.bar.fill" color="#fff" />
-              </View>
-            </View>
-
-            <View style={styles.summaryStatsRow}>
-              <View style={styles.summaryStatItem}>
-                <View style={[styles.summaryDot, { backgroundColor: SemanticColors.success }]} />
-                <Text style={styles.summaryStatLabel}>Depósitos</Text>
-                <Text style={styles.summaryStatValue}>+${totalDepositos.toFixed(0)}</Text>
-              </View>
-              <View style={styles.summaryStatDivider} />
-              <View style={styles.summaryStatItem}>
-                <View style={[styles.summaryDot, { backgroundColor: SemanticColors.error }]} />
-                <Text style={styles.summaryStatLabel}>Retiros</Text>
-                <Text style={styles.summaryStatValue}>-${totalRetiros.toFixed(0)}</Text>
-              </View>
-              <View style={styles.summaryStatDivider} />
-              <View style={styles.summaryStatItem}>
-                <View style={[styles.summaryDot, { backgroundColor: BrandColors.primary }]} />
-                <Text style={styles.summaryStatLabel}>Comisiones</Text>
-                <Text style={styles.summaryStatValue}>+${totalComisiones.toFixed(0)}</Text>
+                <IconSymbol size={24} name="dollarsign.circle.fill" color="#fff" />
               </View>
             </View>
 
             <View style={styles.statsRow}>
               <View style={styles.statBox}>
-                <Text style={styles.statValue}>{transacciones.length}</Text>
+                <Text style={styles.statValue}>{transacciones.filter(t => !t.anulada).length}</Text>
                 <Text style={styles.statLabel}>Operaciones</Text>
               </View>
               <View style={styles.statBox}>
-                <Text style={[styles.statValue, { color: '#FFD700' }]}>${totalComisiones.toFixed(2)}</Text>
-                <Text style={styles.statLabel}>Tu ganancia</Text>
+                <Text style={styles.statValue}>{transacciones.filter(t => !t.anulada).length > 0 ? `${((totalComisiones / (totalDepositos + totalRetiros || 1)) * 100).toFixed(1)}%` : '0%'}</Text>
+                <Text style={styles.statLabel}>Comisión</Text>
               </View>
             </View>
           </View>
         </Animated.View>
 
-        {/* Channel Balances */}
-        {Object.keys(saldosCanalesCalculados).length > 0 && (
-          <Animated.View entering={FadeInUp.delay(200).springify()}>
-            <View style={[styles.channelsCard, { backgroundColor: colors.surface }, Shadows.sm]}>
-              <View style={styles.channelsHeader}>
-                <IconSymbol size={18} name="building.columns.fill" color="#007AFF" />
-                <Text style={[styles.channelsTitle, { color: colors.text }]}>Saldos en Canales</Text>
+        {/* Unified Balance Verification Section */}
+        <Animated.View entering={FadeInUp.delay(200).springify()}>
+          <View style={[styles.verificationCard, { backgroundColor: colors.surface }, Shadows.sm]}>
+            <View style={styles.verificationHeader}>
+              <View style={[styles.verificationIconBg, { backgroundColor: SemanticColors.errorLight }]}>
+                <IconSymbol size={20} name="checklist" color={SemanticColors.error} />
               </View>
-              <Text style={[styles.channelsSubtitle, { color: colors.textTertiary }]}>
-                Balance esperado en cada cuenta bancaria
-              </Text>
-
-              {Object.entries(saldosCanalesCalculados).map(([canalNombre, datos], index) => (
-                <View key={canalNombre}>
-                  {index > 0 && <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />}
-                  <View style={styles.channelRow}>
-                    <View style={styles.channelInfo}>
-                      <View style={[styles.channelIcon, { backgroundColor: '#007AFF15' }]}>
-                        <IconSymbol size={14} name="building.columns" color="#007AFF" />
-                      </View>
-                      <Text style={[styles.channelName, { color: colors.text }]} numberOfLines={1}>
-                        {canalNombre}
-                      </Text>
-                    </View>
-                    <Text style={[styles.channelSaldo, { color: datos.saldoEsperado >= 0 ? '#007AFF' : SemanticColors.error }]}>
-                      ${datos.saldoEsperado.toFixed(2)}
-                    </Text>
-                  </View>
-                  <View style={styles.channelDetails}>
-                    <View style={styles.channelDetailRow}>
-                      <Text style={[styles.channelDetailLabel, { color: colors.textTertiary }]}>Saldo inicial:</Text>
-                      <Text style={[styles.channelDetailValue, { color: colors.textSecondary }]}>${datos.saldoInicial.toFixed(2)}</Text>
-                    </View>
-                    {datos.depositos > 0 && (
-                      <View style={styles.channelDetailRow}>
-                        <Text style={[styles.channelDetailLabel, { color: colors.textTertiary }]}>+ Depósitos:</Text>
-                        <Text style={[styles.channelDetailValue, { color: SemanticColors.success }]}>+${datos.depositos.toFixed(2)}</Text>
-                      </View>
-                    )}
-                    {datos.retiros > 0 && (
-                      <View style={styles.channelDetailRow}>
-                        <Text style={[styles.channelDetailLabel, { color: colors.textTertiary }]}>- Retiros:</Text>
-                        <Text style={[styles.channelDetailValue, { color: SemanticColors.error }]}>-${datos.retiros.toFixed(2)}</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              ))}
-
-              <View style={[styles.divider, { backgroundColor: colors.borderLight, marginTop: Spacing.base }]} />
-              <View style={styles.channelsTotalRow}>
-                <Text style={[styles.channelsTotalLabel, { color: colors.text }]}>Total en Canales</Text>
-                <Text style={styles.channelsTotalValue}>
-                  ${Object.values(saldosCanalesCalculados).reduce((sum, datos) => sum + datos.saldoEsperado, 0).toFixed(2)}
+              <View style={styles.verificationHeaderText}>
+                <Text style={[styles.verificationTitle, { color: colors.text }]}>Verificación de Saldos</Text>
+                <Text style={[styles.verificationSubtitle, { color: colors.textTertiary }]}>
+                  Ingrese el saldo real para cada cuenta
                 </Text>
               </View>
             </View>
-          </Animated.View>
-        )}
 
-        {/* Cash Count Card */}
-        <Animated.View entering={FadeInUp.delay(300).springify()}>
-          <View style={[styles.countCard, { backgroundColor: colors.surface }, Shadows.sm]}>
-            <View style={styles.countHeader}>
-              <IconSymbol size={18} name="banknote.fill" color={SemanticColors.error} />
-              <Text style={[styles.countTitle, { color: colors.text }]}>Conteo de Efectivo</Text>
-            </View>
+            {/* Cash Balance Section */}
+            <View style={[styles.balanceItem, { borderColor: colors.borderLight }]}>
+              <View style={styles.balanceHeader}>
+                <View style={styles.balanceInfo}>
+                  <View style={[styles.balanceIcon, { backgroundColor: SemanticColors.errorLight }]}>
+                    <IconSymbol size={16} name="banknote.fill" color={SemanticColors.error} />
+                  </View>
+                  <View style={styles.balanceTexts}>
+                    <Text style={[styles.balanceName, { color: colors.text }]}>Efectivo en Caja</Text>
+                    <Text style={[styles.balanceExpectedLabel, { color: colors.textTertiary }]}>
+                      Esperado: <Text style={styles.balanceExpectedValue}>${saldoEsperado.toFixed(2)}</Text>
+                    </Text>
+                  </View>
+                </View>
+              </View>
 
-            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-              SALDO REAL CONTADO
-            </Text>
-            <View style={[styles.amountInputWrapper, { backgroundColor: colors.inputBackground }]}>
-              <Text style={styles.currencySymbol}>$</Text>
-              <TextInput
-                style={[styles.amountInput, { color: colors.text }]}
-                placeholder="0.00"
-                placeholderTextColor={colors.inputPlaceholder}
-                value={saldoReal}
-                onChangeText={setSaldoReal}
-                keyboardType="decimal-pad"
-                editable={!saving}
-              />
-            </View>
+              <View style={styles.balanceDetails}>
+                <View style={styles.balanceDetailRow}>
+                  <Text style={[styles.balanceDetailLabel, { color: colors.textTertiary }]}>Saldo inicial:</Text>
+                  <Text style={[styles.balanceDetailValue, { color: colors.textSecondary }]}>${(cajaActual?.montoInicial || 0).toFixed(2)}</Text>
+                </View>
+                <View style={styles.balanceDetailRow}>
+                  <Text style={[styles.balanceDetailLabel, { color: colors.textTertiary }]}>+ Depósitos:</Text>
+                  <Text style={[styles.balanceDetailValue, { color: SemanticColors.success }]}>+${totalDepositos.toFixed(2)}</Text>
+                </View>
+                <View style={styles.balanceDetailRow}>
+                  <Text style={[styles.balanceDetailLabel, { color: colors.textTertiary }]}>- Retiros:</Text>
+                  <Text style={[styles.balanceDetailValue, { color: SemanticColors.error }]}>-${totalRetiros.toFixed(2)}</Text>
+                </View>
+                <View style={styles.balanceDetailRow}>
+                  <Text style={[styles.balanceDetailLabel, { color: colors.textTertiary }]}>+ Comisiones:</Text>
+                  <Text style={[styles.balanceDetailValue, { color: '#007AFF' }]}>+${totalComisiones.toFixed(2)}</Text>
+                </View>
+              </View>
 
-            {/* Difference Indicator */}
-            {hasDiferencia && (
-              <Animated.View
-                entering={FadeInDown.springify()}
-                style={[
-                  styles.diferenciaCard,
-                  diferencia === 0
-                    ? { backgroundColor: SemanticColors.successLight }
-                    : diferencia > 0
-                      ? { backgroundColor: SemanticColors.infoLight }
-                      : { backgroundColor: SemanticColors.errorLight }
-                ]}
-              >
-                <IconSymbol
-                  size={24}
-                  name={diferencia === 0 ? 'checkmark.circle.fill' : 'exclamationmark.triangle.fill'}
-                  color={diferencia === 0 ? SemanticColors.success : diferencia > 0 ? SemanticColors.info : SemanticColors.error}
+              <View style={[styles.balanceInputWrapper, { backgroundColor: colors.inputBackground, borderColor: SemanticColors.error }]}>
+                <Text style={[styles.balanceInputCurrency, { color: SemanticColors.error }]}>$</Text>
+                <TextInput
+                  style={[styles.balanceInput, { color: colors.text }]}
+                  placeholder="Saldo contado..."
+                  placeholderTextColor={colors.inputPlaceholder}
+                  value={saldoReal}
+                  onChangeText={setSaldoReal}
+                  keyboardType="decimal-pad"
+                  editable={!saving}
                 />
-                <View style={styles.diferenciaContent}>
-                  <Text style={[styles.diferenciaLabel, { color: colors.textSecondary }]}>
-                    {diferencia === 0 ? '¡Cuadra perfecto!' : diferencia > 0 ? 'Sobrante' : 'Faltante'}
+              </View>
+
+              {/* Difference Indicator for Cash */}
+              {hasDiferencia && (
+                <Animated.View
+                  entering={FadeInDown.springify()}
+                  style={[
+                    styles.balanceDiferencia,
+                    diferencia === 0
+                      ? { backgroundColor: SemanticColors.successLight }
+                      : diferencia > 0
+                        ? { backgroundColor: SemanticColors.infoLight }
+                        : { backgroundColor: SemanticColors.errorLight }
+                  ]}
+                >
+                  <IconSymbol
+                    size={18}
+                    name={diferencia === 0 ? 'checkmark.circle.fill' : 'exclamationmark.triangle.fill'}
+                    color={diferencia === 0 ? SemanticColors.success : diferencia > 0 ? SemanticColors.info : SemanticColors.error}
+                  />
+                  <Text style={[styles.balanceDiferenciaLabel, { color: colors.textSecondary }]}>
+                    {diferencia === 0 ? '¡Cuadra!' : diferencia > 0 ? 'Sobrante' : 'Faltante'}
                   </Text>
                   <Text style={[
-                    styles.diferenciaValue,
+                    styles.balanceDiferenciaValue,
                     { color: diferencia === 0 ? SemanticColors.success : diferencia > 0 ? SemanticColors.info : SemanticColors.error }
                   ]}>
                     {diferencia >= 0 ? '+' : ''}${diferencia.toFixed(2)}
                   </Text>
-                </View>
-              </Animated.View>
-            )}
-
-            {/* Notes */}
-            <View style={styles.notesSection}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-                OBSERVACIONES
-              </Text>
-              <TextInput
-                style={[styles.notesInput, { backgroundColor: colors.inputBackground, color: colors.text }]}
-                placeholder="Notas del cierre..."
-                placeholderTextColor={colors.inputPlaceholder}
-                value={notas}
-                onChangeText={setNotas}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-                editable={!saving}
-              />
+                </Animated.View>
+              )}
             </View>
+
+            {/* Channel Balances Section */}
+            {Object.entries(saldosCanalesCalculados).map(([canalNombre, datos], index) => {
+              const saldoRealCanal = saldosRealesCanales[canalNombre] || '';
+              const hasDiferenciaCanal = saldoRealCanal && isValidNumber(saldoRealCanal);
+              const diferenciaCanal = hasDiferenciaCanal ? parseLocalizedFloat(saldoRealCanal) - datos.saldoEsperado : 0;
+
+              return (
+                <View key={canalNombre} style={[styles.balanceItem, { borderColor: colors.borderLight }]}>
+                  <View style={styles.balanceHeader}>
+                    <View style={styles.balanceInfo}>
+                      <View style={[styles.balanceIcon, { backgroundColor: '#007AFF15' }]}>
+                        <IconSymbol size={16} name="building.columns.fill" color="#007AFF" />
+                      </View>
+                      <View style={styles.balanceTexts}>
+                        <Text style={[styles.balanceName, { color: colors.text }]} numberOfLines={1}>{canalNombre}</Text>
+                        <Text style={[styles.balanceExpectedLabel, { color: colors.textTertiary }]}>
+                          Esperado: <Text style={[styles.balanceExpectedValue, { color: '#007AFF' }]}>${datos.saldoEsperado.toFixed(2)}</Text>
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.balanceDetails}>
+                    <View style={styles.balanceDetailRow}>
+                      <Text style={[styles.balanceDetailLabel, { color: colors.textTertiary }]}>Saldo inicial:</Text>
+                      <Text style={[styles.balanceDetailValue, { color: colors.textSecondary }]}>${datos.saldoInicial.toFixed(2)}</Text>
+                    </View>
+                    {datos.retiros > 0 && (
+                      <View style={styles.balanceDetailRow}>
+                        <Text style={[styles.balanceDetailLabel, { color: colors.textTertiary }]}>+ Retiros (entrada):</Text>
+                        <Text style={[styles.balanceDetailValue, { color: SemanticColors.success }]}>+${datos.retiros.toFixed(2)}</Text>
+                      </View>
+                    )}
+                    {datos.depositos > 0 && (
+                      <View style={styles.balanceDetailRow}>
+                        <Text style={[styles.balanceDetailLabel, { color: colors.textTertiary }]}>- Depósitos (salida):</Text>
+                        <Text style={[styles.balanceDetailValue, { color: SemanticColors.error }]}>-${datos.depositos.toFixed(2)}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={[styles.balanceInputWrapper, { backgroundColor: colors.inputBackground, borderColor: '#007AFF' }]}>
+                    <Text style={[styles.balanceInputCurrency, { color: '#007AFF' }]}>$</Text>
+                    <TextInput
+                      style={[styles.balanceInput, { color: colors.text }]}
+                      placeholder="Saldo verificado..."
+                      placeholderTextColor={colors.inputPlaceholder}
+                      value={saldoRealCanal}
+                      onChangeText={(text) => setSaldosRealesCanales(prev => ({ ...prev, [canalNombre]: text }))}
+                      keyboardType="decimal-pad"
+                      editable={!saving}
+                    />
+                  </View>
+
+                  {/* Difference Indicator for Channel */}
+                  {hasDiferenciaCanal && (
+                    <Animated.View
+                      entering={FadeInDown.springify()}
+                      style={[
+                        styles.balanceDiferencia,
+                        diferenciaCanal === 0
+                          ? { backgroundColor: SemanticColors.successLight }
+                          : diferenciaCanal > 0
+                            ? { backgroundColor: SemanticColors.infoLight }
+                            : { backgroundColor: SemanticColors.errorLight }
+                      ]}
+                    >
+                      <IconSymbol
+                        size={18}
+                        name={diferenciaCanal === 0 ? 'checkmark.circle.fill' : 'exclamationmark.triangle.fill'}
+                        color={diferenciaCanal === 0 ? SemanticColors.success : diferenciaCanal > 0 ? SemanticColors.info : SemanticColors.error}
+                      />
+                      <Text style={[styles.balanceDiferenciaLabel, { color: colors.textSecondary }]}>
+                        {diferenciaCanal === 0 ? '¡Cuadra!' : diferenciaCanal > 0 ? 'Sobrante' : 'Faltante'}
+                      </Text>
+                      <Text style={[
+                        styles.balanceDiferenciaValue,
+                        { color: diferenciaCanal === 0 ? SemanticColors.success : diferenciaCanal > 0 ? SemanticColors.info : SemanticColors.error }
+                      ]}>
+                        {diferenciaCanal >= 0 ? '+' : ''}${diferenciaCanal.toFixed(2)}
+                      </Text>
+                    </Animated.View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        </Animated.View>
+
+        {/* Notes Section */}
+        <Animated.View entering={FadeInUp.delay(300).springify()}>
+          <View style={[styles.notesCard, { backgroundColor: colors.surface }, Shadows.sm]}>
+            <View style={styles.notesHeader}>
+              <IconSymbol size={18} name="note.text" color={colors.textSecondary} />
+              <Text style={[styles.notesTitle, { color: colors.text }]}>Observaciones</Text>
+            </View>
+            <TextInput
+              style={[styles.notesInput, { backgroundColor: colors.inputBackground, color: colors.text }]}
+              placeholder="Notas del cierre..."
+              placeholderTextColor={colors.inputPlaceholder}
+              value={notas}
+              onChangeText={setNotas}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              editable={!saving}
+            />
           </View>
         </Animated.View>
 
@@ -664,7 +684,186 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.md,
   },
 
-  // Count Card
+  // Verification Card (unified balance verification)
+  verificationCard: {
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.base,
+  },
+  verificationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  verificationIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  verificationHeaderText: {
+    flex: 1,
+  },
+  verificationTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  verificationSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+
+  // Balance Item (for each cash/channel balance)
+  balanceItem: {
+    borderTopWidth: 1,
+    paddingTop: Spacing.lg,
+    marginTop: Spacing.base,
+  },
+  balanceHeader: {
+    marginBottom: Spacing.sm,
+  },
+  balanceInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  balanceIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  balanceTexts: {
+    flex: 1,
+  },
+  balanceName: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  balanceExpectedLabel: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  balanceExpectedValue: {
+    fontWeight: '700',
+    color: SemanticColors.error,
+  },
+  balanceDetails: {
+    marginLeft: 46,
+    marginBottom: Spacing.md,
+    gap: 4,
+  },
+  balanceDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  balanceDetailLabel: {
+    fontSize: 12,
+  },
+  balanceDetailValue: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  balanceInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.md,
+    borderWidth: 2,
+    marginTop: Spacing.xs,
+  },
+  balanceInputCurrency: {
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  balanceInput: {
+    flex: 1,
+    fontSize: 22,
+    fontWeight: '700',
+    paddingVertical: Spacing.md,
+    marginLeft: Spacing.sm,
+  },
+  balanceDiferencia: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: Radius.md,
+    padding: Spacing.sm,
+    marginTop: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  balanceDiferenciaLabel: {
+    fontSize: 12,
+    flex: 1,
+  },
+  balanceDiferenciaValue: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  // Verification Summary
+  verificationSummary: {
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginTop: Spacing.lg,
+  },
+  verificationSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  verificationSummaryLabel: {
+    fontSize: 13,
+  },
+  verificationSummaryValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  verificationSummaryTotal: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(150,150,150,0.2)',
+    marginTop: Spacing.xs,
+    paddingTop: Spacing.sm,
+  },
+  verificationSummaryTotalLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  verificationSummaryTotalValue: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+
+  // Notes Card
+  notesCard: {
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.base,
+  },
+  notesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  notesTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  notesInput: {
+    borderRadius: Radius.md,
+    padding: Spacing.base,
+    fontSize: 15,
+    minHeight: 80,
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.3)',
+  },
+
+  // Legacy styles (kept for compatibility)
   countCard: {
     borderRadius: Radius.xl,
     padding: Spacing.lg,
@@ -726,13 +925,5 @@ const styles = StyleSheet.create({
   },
   notesSection: {
     marginTop: Spacing.lg,
-  },
-  notesInput: {
-    borderRadius: Radius.md,
-    padding: Spacing.base,
-    fontSize: 15,
-    minHeight: 80,
-    borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.3)', // Visible border
   },
 });

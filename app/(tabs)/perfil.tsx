@@ -6,7 +6,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useCaja } from '@/hooks/useCaja';
 import { CanalTransaccion } from '@/types/caja';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useHeaderHeight } from '@react-navigation/elements';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
   Alert,
@@ -49,6 +50,21 @@ export default function ConfiguracionScreen() {
   const { user, signOut } = useAuth();
   const { canales, toggleCanal, agregarCanal, eliminarCanal } = useCanales();
   const { isAbierta } = useCaja();
+  const navigation = useNavigation();
+
+  const headerHeight = useHeaderHeight();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      navigation.getParent()?.setOptions({
+        headerShown: true,
+        headerTitle: 'Ajustes',
+        headerRight: null,
+        headerStyle: { backgroundColor: 'transparent' },
+        headerTransparent: true,
+      });
+    }, [navigation, colors.background])
+  );
 
   const [config, setConfig] = useState<ConfiguracionData>(defaultConfig);
   const [showAddCanalModal, setShowAddCanalModal] = useState(false);
@@ -249,14 +265,10 @@ export default function ConfiguracionScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <AddCanalModal />
 
-      <View style={[styles.topBar, { backgroundColor: colors.background }]}>
-        <Text style={[styles.topBarTitle, isDark && styles.textDark]}>Ajustes</Text>
-      </View>
 
       <ScrollView
-        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ paddingBottom: 40, paddingTop: headerHeight }}
       >
         {/* Perfil Header */}
         <View style={[styles.profileSection, { backgroundColor: colors.surface }]}>
