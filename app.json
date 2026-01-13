@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "minegocio",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mrmango1.minegocio",
@@ -42,14 +42,6 @@
           "backgroundColor": "#ffffff",
           "dark": {
             "backgroundColor": "#000000"
-          }
-        }
-      ],
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "dynamic"
           }
         }
       ]
