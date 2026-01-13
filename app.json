@@ -15,7 +15,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "appleTeamId": "79LVT24H38",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./config/GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
@@ -27,7 +27,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.mrmango1.minegocio",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./config/google-services.json"
     },
     "web": {
       "output": "static",
