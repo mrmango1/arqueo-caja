@@ -1,5 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BrandColors, Colors } from '@/constants/theme';
+import { BrandColors, Colors, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCanales } from '@/context/CanalesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -268,7 +268,7 @@ export default function ConfiguracionScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40, paddingTop: headerHeight }}
+        contentContainerStyle={{ paddingBottom: 40, paddingTop: headerHeight, paddingHorizontal: Spacing.lg }}
       >
         {/* Perfil Header */}
         <View style={[styles.profileSection, { backgroundColor: colors.surface }]}>

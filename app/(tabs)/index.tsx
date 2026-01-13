@@ -121,7 +121,6 @@ export default function HomeScreen() {
             activeOpacity={0.7}
           >
             <IconSymbol size={16} name="lock.fill" color={isDark ? '#F8FAFC' : BrandColors.primary} />
-            <Text style={[styles.closeButtonText, { color: isDark ? '#F8FAFC' : BrandColors.primary }]}>Cerrar Caja</Text>
           </TouchableOpacity>
         ),
         headerStyle: { backgroundColor: 'transparent' },
