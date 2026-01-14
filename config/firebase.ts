@@ -38,7 +38,9 @@ if (missingEnvVars.length > 0) {
 }
 
 // Inicializar Firebase
-const app = initializeApp(firebaseConfig);
+import { getApp, getApps } from 'firebase/app';
+
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
 // Inicializar Auth con persistencia para React Native
 // @ts-ignore - getReactNativePersistence existe en runtime
