@@ -61,7 +61,8 @@
         }
       ],
       "./plugins/withModularHeaders",
-      "./plugins/withFirebaseConfiguration"
+      "./plugins/withFirebaseConfiguration",
+      "./plugins/withAsciiProductName"
     ],
     "experiments": {
       "typedRoutes": true,
