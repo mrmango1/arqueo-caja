@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mrmango1.minegocio",
+      "bundleIdentifier": "com.mrmango1.arqueocaja",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -26,7 +26,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.mrmango1.minegocio",
+      "package": "com.mrmango1.arqueocaja",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
