@@ -1,4 +1,3 @@
-import { formatDateHeader, groupCajasByDate } from '@/app/utils/_date-utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { StatCard } from '@/components/ui/stat-card';
@@ -7,6 +6,7 @@ import { BrandColors, Colors, Gradients, Radius, Shadows, Spacing } from '@/cons
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Caja } from '@/types/caja';
+import { formatDateHeader, groupCajasByDate } from '@/utils/date-utils';
 import { onValue, ref } from 'firebase/database';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
