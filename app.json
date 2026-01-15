@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Cuadre Fácil",
+    "name": "Cuadre Facil",
     "slug": "cuadre-facil",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,7 +12,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.mrmango1.cuadrefacil",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "Cuadre Fácil"
       },
       "appleTeamId": "79LVT24H38",
       "googleServicesFile": "./GoogleService-Info.plist"
@@ -27,7 +28,8 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.mrmango1.cuadrefacil",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "label": "Cuadre Fácil"
     },
     "web": {
       "output": "static",
