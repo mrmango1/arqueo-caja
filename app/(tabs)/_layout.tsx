@@ -44,10 +44,6 @@ export default function TabLayout() {
         />
         <Label>Ajustes</Label>
       </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="search" role="search">
-        <Label>Search</Label>
-      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
