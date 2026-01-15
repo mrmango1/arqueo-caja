@@ -5,12 +5,12 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "minegocio",
+    "scheme": "cuadrefacil",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mrmango1.arqueocaja",
+      "bundleIdentifier": "com.mrmango1.cuadrefacil",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -26,7 +26,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.mrmango1.arqueocaja",
+      "package": "com.mrmango1.cuadrefacil",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
